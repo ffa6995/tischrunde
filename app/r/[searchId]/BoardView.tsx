@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Check, QrCode } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { Board } from "@/components/Board";
 import { Seat } from "@/components/Seat";
@@ -10,6 +11,7 @@ import { QRCodeBlock } from "@/components/QRCodeBlock";
 import { GuestPanel } from "@/components/GuestPanel";
 import { DemoBanner } from "@/components/DemoBanner";
 import { useRound, useJoinRound } from "@/lib/hooks/useRounds";
+import { useCheckIn } from "@/lib/hooks/useActivity";
 import { useSession } from "@/lib/hooks/useSession";
 import {
   boardTheme,
@@ -26,6 +28,11 @@ export function BoardView({ searchId }: { searchId: string }) {
   const { data: round, isLoading } = useRound(searchId);
   const { data: session } = useSession();
   const join = useJoinRound(searchId, round?.event_id ?? null);
+  const checkIn = useCheckIn(
+    searchId,
+    round?.event_id ?? null,
+    round?.game?.name ?? null,
+  );
 
   const [skill, setSkill] = useState<SkillLevel>("learning");
   const [bringsGame, setBringsGame] = useState(false);
@@ -53,13 +60,21 @@ export function BoardView({ searchId }: { searchId: string }) {
   const seatsTaken = round.seats_taken;
   const emptyCount = Math.max(0, round.seats_total - seatsTaken);
   const full = emptyCount === 0;
-  const alreadyIn = !!userId && round.participants.some((p) => p.user_id === userId);
+  const me = userId
+    ? round.participants.find((p) => p.user_id === userId)
+    : undefined;
+  const alreadyIn = !!me;
+  const confirmed = me?.status === "confirmed";
   const theme = boardTheme(round.game?.theme);
   const subtitle = `${GAME_SOURCE_LABEL[round.game_source]} · sucht ${LEVEL_LABEL[round.desired_level]}`;
 
   function handleJoin() {
     if (!userId || alreadyIn || join.isPending) return;
-    join.mutate({ skillLevel: skill, bringsGame });
+    join.mutate({
+      skillLevel: skill,
+      bringsGame,
+      gameName: round?.game?.name ?? null,
+    });
   }
 
   return (
@@ -114,16 +129,35 @@ export function BoardView({ searchId }: { searchId: string }) {
       )}
 
       {alreadyIn && (
-        <motion.p
+        <motion.div
           role="status"
           aria-live="polite"
           initial={{ opacity: 0, scale: 0.96, y: -4 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 460, damping: 26 }}
-          className="rounded-[14px] border border-green bg-green/10 px-4 py-3 text-sm font-extrabold text-green-deep"
+          className="flex flex-col gap-2.5 rounded-[14px] border border-green bg-green/10 px-4 py-3"
         >
-          Du bist dabei — bis gleich am Tisch!
-        </motion.p>
+          {confirmed ? (
+            <p className="flex items-center gap-2 text-sm font-extrabold text-green-deep">
+              <Check className="size-4" /> Eingecheckt — viel Spaß am Tisch!
+            </p>
+          ) : (
+            <>
+              <p className="text-sm font-extrabold text-green-deep">
+                Du bist dabei — beim Ankommen am Tisch einchecken:
+              </p>
+              <button
+                type="button"
+                onClick={() => checkIn.mutate()}
+                disabled={checkIn.isPending}
+                className="flex items-center justify-center gap-2 rounded-[12px] bg-gradient-to-br from-green to-green-deep px-4 py-3 text-sm font-black text-white shadow-[0_4px_0_var(--green-deep)] transition-transform active:translate-y-[3px] active:shadow-none disabled:opacity-50"
+              >
+                <QrCode className="size-4" />
+                {checkIn.isPending ? "Check-in…" : "Ich bin da — Check-in"}
+              </button>
+            </>
+          )}
+        </motion.div>
       )}
 
       <Board

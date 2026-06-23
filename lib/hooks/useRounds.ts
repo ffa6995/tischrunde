@@ -15,6 +15,7 @@ import {
   demoRound,
   demoRoundsForEvent,
 } from "@/lib/demo/fixtures";
+import { appendDemoActivity } from "./useActivity";
 import type { SessionState } from "./useSession";
 import type {
   DesiredLevel,
@@ -107,6 +108,11 @@ export function useCreateRound(eventId: string) {
         qc.setQueryData<RoundWithGame[]>(["rounds", eventId], (prev) =>
           prev ? [...prev, round] : [round],
         );
+        appendDemoActivity(qc, creatorId, {
+          type: "round_created",
+          sourceId: id,
+          metadata: { game_name: game?.name ?? null },
+        });
         return id;
       }
 
@@ -133,6 +139,7 @@ export function useCreateRound(eventId: string) {
 export interface JoinForm {
   skillLevel: SkillLevel;
   bringsGame: boolean;
+  gameName?: string | null;
 }
 
 function applyDemoJoin(
@@ -173,6 +180,11 @@ function applyDemoJoin(
       list?.map((r) => (r.id === searchId ? merge(r) : r)),
     );
   }
+  appendDemoActivity(qc, userId, {
+    type: "round_joined",
+    sourceId: searchId,
+    metadata: { brings_game: form.bringsGame, game_name: form.gameName ?? null },
+  });
 }
 
 export function useJoinRound(searchId: string, eventId: string | null) {
@@ -193,12 +205,15 @@ export function useJoinRound(searchId: string, eventId: string | null) {
         userId,
         skillLevel: form.skillLevel,
         bringsGame: form.bringsGame,
+        gameName: form.gameName ?? null,
       });
     },
     onSuccess: () => {
       if (isSupabaseConfigured()) {
+        const session = qc.getQueryData<SessionState>(["session"]);
         qc.invalidateQueries({ queryKey: ["round", searchId] });
         if (eventId) qc.invalidateQueries({ queryKey: ["rounds", eventId] });
+        qc.invalidateQueries({ queryKey: ["activity", session?.user?.id] });
       }
     },
   });

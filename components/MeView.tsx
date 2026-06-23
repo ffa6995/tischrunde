@@ -5,15 +5,13 @@ import { TradingCard } from "@/components/TradingCard";
 import { GuestPanel } from "@/components/GuestPanel";
 import { DemoBanner } from "@/components/DemoBanner";
 import { useSession } from "@/lib/hooks/useSession";
-
-// MVP-light: Platzhalter-Signale (Trust = positive Chips, kein Score).
-// Wachsen später automatisch aus activity_events.
-const DEMO_SIGNALS = ["War 5× dabei", "Host", "Bringt Spiele mit", "Erklärt gern"];
-const DEMO_FAVORITES = ["🏘️ Catan", "🃏 Jassen", "⚡ Pokémon TCG"];
+import { useTrustSignals } from "@/lib/hooks/useActivity";
 
 export function MeView() {
   const { data: session, isLoading } = useSession();
   const profile = session?.profile;
+  // Trust = aus activity_events abgeleitete Signal-Chips (kein Score).
+  const { trust } = useTrustSignals(session?.user?.id);
 
   return (
     <main className="mx-auto flex w-full max-w-[520px] flex-col gap-4 px-5 py-6 pb-24 lg:py-10">
@@ -30,12 +28,13 @@ export function MeView() {
           <TradingCard
             profile={profile}
             role={profile.role === "guest" ? "Gast" : "Spieler"}
-            signals={DEMO_SIGNALS}
-            favorites={DEMO_FAVORITES}
+            signals={trust.signals}
+            favorites={trust.favorites}
           />
           <p className="px-2 text-center text-sm font-semibold text-ink-soft">
-            Im ersten Release Platzhalter — Stats &amp; Signale wachsen später
-            automatisch aus deinen echten Runden.
+            {trust.signals.length === 0
+              ? "Tritt einer Runde bei und checke am Tisch ein — deine Signale wachsen aus echten Runden."
+              : "Deine Signale wachsen automatisch aus echten Runden (Beitreten, Check-in, Hosten)."}
           </p>
           <section className="mx-auto w-full max-w-[330px] rounded-[var(--radius-lg)] border border-line bg-surface p-4 shadow-[0_5px_0_var(--line)]">
             <GuestPanel />

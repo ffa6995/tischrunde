@@ -126,6 +126,27 @@ export interface Participant {
   status: ParticipantStatus;
 }
 
+export type ActivityType =
+  | "round_created"
+  | "round_joined"
+  | "checked_in"
+  | "host_confirmed"
+  | "game_brought"
+  | "respect_given"
+  | "no_show_reported"
+  | "match_confirmed";
+
+export interface ActivityEvent {
+  id: string;
+  user_id: string;
+  type: ActivityType;
+  source_type: "event" | "game_search" | "match" | "profile" | "location" | null;
+  source_id: string | null;
+  metadata: Record<string, unknown> | null;
+  created_by: string | null;
+  created_at: string;
+}
+
 /** Teilnehmer inkl. (Teil-)Profil — für die Slot-Anzeige im Spielfeld. */
 export interface ParticipantWithProfile extends Participant {
   profile: Pick<Profile, "id" | "display_name" | "avatar_url"> | null;

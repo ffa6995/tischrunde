@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Plus } from "lucide-react";
+import { Check, Plus } from "lucide-react";
 import { Meeple } from "./icons";
 import { SKILL_CLASS, SKILL_LABEL } from "@/lib/labels";
 import type { ParticipantWithProfile, SkillLevel } from "@/lib/types";
@@ -57,6 +57,7 @@ export function Seat({
   const skill = participant.skill_level;
   const name = isYou ? "Du" : (participant.profile?.display_name ?? "Gast");
   const isHost = participant.role === "host";
+  const checkedIn = participant.status === "confirmed";
 
   return (
     <motion.div
@@ -65,7 +66,7 @@ export function Seat({
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: "spring", stiffness: 520, damping: 28 }}
       role="group"
-      aria-label={`${name}${isHost ? ", Host" : ""}, ${SKILL_LABEL[skill]}, Platz belegt`}
+      aria-label={`${name}${isHost ? ", Host" : ""}, ${SKILL_LABEL[skill]}, ${checkedIn ? "eingecheckt" : "Platz belegt"}`}
       className={`relative flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-[16px] border bg-surface p-3 shadow-[0_4px_0_var(--line)] ${
         isYou
           ? "border-gold shadow-[0_4px_0_var(--gold)] ring-[3px] ring-gold/35"
@@ -75,6 +76,11 @@ export function Seat({
       {isHost && (
         <span className="absolute right-2 top-2 rounded-full bg-gold/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-skill-learning">
           Host
+        </span>
+      )}
+      {checkedIn && (
+        <span className="absolute left-2 top-2 flex items-center gap-0.5 rounded-full bg-green/20 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-green-deep">
+          <Check className="size-2.5" /> da
         </span>
       )}
       <Meeple

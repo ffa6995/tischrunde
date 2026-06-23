@@ -6,6 +6,7 @@ export interface JoinRoundInput {
   userId: string;
   skillLevel: SkillLevel;
   bringsGame: boolean;
+  gameName?: string | null;
 }
 
 export async function joinRound(
@@ -34,10 +35,33 @@ export async function joinRound(
     type: "round_joined",
     source_type: "game_search",
     source_id: input.searchId,
-    metadata: { brings_game: input.bringsGame },
+    metadata: { brings_game: input.bringsGame, game_name: input.gameName ?? null },
   });
 
   return data as Participant;
+}
+
+/** QR-Check-in (Light): bestätigt Anwesenheit (Konzept §11.4 — das Schwungrad). */
+export async function checkIn(
+  supabase: SupabaseClient,
+  searchId: string,
+  userId: string,
+  gameName?: string | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from("participants")
+    .update({ status: "confirmed" })
+    .eq("search_id", searchId)
+    .eq("user_id", userId);
+  if (error) throw error;
+
+  await supabase.from("activity_events").insert({
+    user_id: userId,
+    type: "checked_in",
+    source_type: "game_search",
+    source_id: searchId,
+    metadata: { game_name: gameName ?? null },
+  });
 }
 
 export async function leaveRound(

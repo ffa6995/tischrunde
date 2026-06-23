@@ -4,6 +4,7 @@ import { Stamp } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { TradingCard } from "@/components/TradingCard";
 import { GuestPanel } from "@/components/GuestPanel";
+import { ClaimProfile } from "@/components/ClaimProfile";
 import { DemoBanner } from "@/components/DemoBanner";
 import { useSession } from "@/lib/hooks/useSession";
 import { useTrustSignals } from "@/lib/hooks/useActivity";
@@ -55,6 +56,8 @@ export function MeView() {
               </div>
             </section>
           )}
+          <ClaimProfile />
+
           <section className="mx-auto w-full max-w-[330px] rounded-[var(--radius-lg)] border border-line bg-surface p-4 shadow-[0_5px_0_var(--line)]">
             <GuestPanel />
           </section>

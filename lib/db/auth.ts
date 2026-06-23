@@ -26,3 +26,18 @@ export async function signOut(supabase: SupabaseClient): Promise<void> {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
+
+/**
+ * Profil-Claim (Konzept §8.3): hängt eine E-Mail an den bestehenden (anonymen)
+ * User. Supabase schickt eine Bestätigungs-Mail; nach dem Klick ist der User
+ * dauerhaft — die User-ID bleibt gleich, also wandern Stats/Stamps mit.
+ */
+export async function requestEmailClaim(
+  supabase: SupabaseClient,
+  email: string,
+): Promise<void> {
+  const e = email.trim();
+  if (!e) throw new Error("Bitte eine E-Mail-Adresse eingeben.");
+  const { error } = await supabase.auth.updateUser({ email: e });
+  if (error) throw error;
+}

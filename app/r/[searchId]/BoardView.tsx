@@ -13,6 +13,7 @@ import { DemoBanner } from "@/components/DemoBanner";
 import { useRound, useJoinRound } from "@/lib/hooks/useRounds";
 import { useCheckIn } from "@/lib/hooks/useActivity";
 import { useEvent } from "@/lib/hooks/useEvents";
+import { useRealtimeRound } from "@/lib/hooks/useRealtimeRound";
 import { useSession } from "@/lib/hooks/useSession";
 import {
   boardTheme,
@@ -36,6 +37,7 @@ export function BoardView({ searchId }: { searchId: string }) {
     round?.game?.name ?? null,
     event?.title ?? null,
   );
+  useRealtimeRound(searchId, round?.event_id ?? null);
 
   const [skill, setSkill] = useState<SkillLevel>("learning");
   const [bringsGame, setBringsGame] = useState(false);

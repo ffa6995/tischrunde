@@ -231,3 +231,20 @@ insert into location_games (location_id, game_id, status) values
   ('33333333-3333-3333-3333-333333333301','11111111-1111-1111-1111-111111111103','available'),
   ('33333333-3333-3333-3333-333333333301','11111111-1111-1111-1111-111111111104','available')
 on conflict do nothing;
+
+-- ---------- Realtime: Live-Sitzplätze (§5.5) ----------
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'participants'
+  ) then
+    alter publication supabase_realtime add table participants;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'game_searches'
+  ) then
+    alter publication supabase_realtime add table game_searches;
+  end if;
+end $$;

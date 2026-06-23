@@ -1,26 +1,111 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Nunito+Sans:wght@400;600;700;800;900&display=swap");
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "./design-tokens.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* Dark mode is driven by [data-theme="dark"] on <html> (see design-tokens.css),
+   not by a .dark class. Keep shadcn's `dark:` utilities on the same switch. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme inline {
+  /* ---- Brand palette → Tailwind utilities (bg-surface, text-ink, …) ---- */
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-line: var(--line);
+  --color-green: var(--green);
+  --color-green-deep: var(--green-deep);
+  --color-wood: var(--wood);
+  --color-wood-deep: var(--wood-deep);
+  --color-terra: var(--terra);
+  --color-gold: var(--gold);
+
+  /* semantic — status / skill / trust (Text+Icon, nie nur Farbe) */
+  --color-status-open: var(--status-open);
+  --color-status-full: var(--status-full);
+  --color-status-requested: var(--status-requested);
+  --color-status-confirmed: var(--status-confirmed);
+  --color-status-cancelled: var(--status-cancelled);
+  --color-skill-beginner: var(--skill-beginner);
+  --color-skill-learning: var(--skill-learning);
+  --color-skill-advanced: var(--skill-advanced);
+  --color-skill-any: var(--skill-any);
+  --color-trust-verified: var(--trust-verified);
+  --color-trust-mentor: var(--trust-mentor);
+
+  /* ---- Fonts (from design-tokens.css) ---- */
+  --font-sans: var(--font-ui);
+  --font-display: var(--font-display);
+
+  /* ---- shadcn semantic colors (bridged to brand in :root below) ---- */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Bridge shadcn's semantic tokens onto the brand palette. Dark values follow
+   automatically because the brand vars switch under [data-theme="dark"]. */
+:root {
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--green);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-soft);
+  --accent: var(--surface-2);
+  --accent-foreground: var(--ink);
+  --destructive: var(--terra);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--gold);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes foil {
+  0% { background-position: 120% 0; }
+  50% { background-position: -30% 0; }
+  100% { background-position: 120% 0; }
 }

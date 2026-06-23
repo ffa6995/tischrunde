@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="de" data-mode="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tischrunde – Design-Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&family=Nunito+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* ---------- TOKENS ---------- */
+  :root{
+    --bg:#EADBBE; --bg-2:#E0CEA8; --surface:#FBF4E6; --surface-2:#F3E7CF;
+    --ink:#2C2018; --ink-soft:#7A6650; --line:#D8C39E;
+    --wood:#A86B33; --wood-deep:#6E4322;
+    --green:#2F7D4F; --green-deep:#1E6340;
+    --terra:#C8553D; --gold:#E0A82E;
+    --shadow:rgba(70,46,20,.20); --shadow-strong:rgba(70,46,20,.32);
+    --card-radius:22px;
+  }
+  [data-mode="dark"]{
+    --bg:#191310; --bg-2:#221913; --surface:#2B2018; --surface-2:#352718;
+    --ink:#F3E8D5; --ink-soft:#B6A286; --line:#43331F;
+    --wood:#B5793C; --wood-deep:#3A2616;
+    --green:#3FA066; --green-deep:#2A6E47;
+    --terra:#E0664A; --gold:#F0C04A;
+    --shadow:rgba(0,0,0,.55); --shadow-strong:rgba(0,0,0,.7);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Nunito Sans",system-ui,sans-serif;
+    background:
+      radial-gradient(120% 80% at 50% -10%, var(--bg-2), var(--bg)) fixed;
+    color:var(--ink);
+    display:flex;justify-content:center;
+    -webkit-font-smoothing:antialiased;
+    transition:background .4s ease, color .4s ease;
+  }
+
+  /* ---------- APP SHELL ---------- */
+  .app{
+    width:100%;max-width:468px;min-height:100vh;
+    background:var(--bg);
+    position:relative;display:flex;flex-direction:column;
+    box-shadow:0 0 60px rgba(0,0,0,.18);
+    overflow:hidden;
+    transition:background .4s ease;
+  }
+  @media(min-width:520px){
+    body{padding:22px 0}
+    .app{min-height:calc(100vh - 44px);border-radius:30px;border:1px solid var(--line)}
+  }
+
+  /* ---------- TOP BAR ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:30;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 18px 12px;
+    background:linear-gradient(var(--bg),color-mix(in srgb,var(--bg) 80%,transparent));
+    backdrop-filter:blur(6px);
+  }
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand .logo{
+    width:38px;height:38px;border-radius:12px;
+    background:linear-gradient(140deg,var(--green),var(--green-deep));
+    display:grid;place-items:center;
+    box-shadow:0 4px 0 var(--green-deep), 0 8px 14px var(--shadow);
+  }
+  .brand h1{font-family:"Fraunces",serif;font-weight:900;font-size:21px;letter-spacing:-.01em;line-height:1}
+  .brand span{display:block;font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin-top:3px}
+
+  .modebtn{
+    border:1px solid var(--line);background:var(--surface);
+    width:44px;height:44px;border-radius:14px;cursor:pointer;color:var(--ink);
+    display:grid;place-items:center;box-shadow:0 3px 0 var(--line);
+    transition:transform .12s ease;
+  }
+  .modebtn:active{transform:translateY(2px);box-shadow:none}
+  .modebtn svg{width:21px;height:21px}
+  [data-mode="light"] .i-moon{display:block}
+  [data-mode="light"] .i-sun{display:none}
+  [data-mode="dark"] .i-moon{display:none}
+  [data-mode="dark"] .i-sun{display:block}
+
+  /* ---------- SCREENS ---------- */
+  .scroll{flex:1;overflow-y:auto;padding:6px 18px 120px}
+  .screen{display:none;animation:fade .35s ease both}
+  .screen.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .eyebrow{font-size:11px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--terra);margin:14px 2px 8px}
+  .h2{font-family:"Fraunces",serif;font-weight:800;font-size:27px;letter-spacing:-.02em;margin:2px 0 4px}
+  .lead{color:var(--ink-soft);font-weight:600;font-size:14px;margin-bottom:14px}
+
+  /* ---------- EVENT CARDS ---------- */
+  .ecard{
+    position:relative;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--card-radius);padding:16px;margin-bottom:14px;cursor:pointer;
+    box-shadow:0 5px 0 var(--line),0 14px 22px -14px var(--shadow);
+    transition:transform .14s ease, box-shadow .14s ease;
+    overflow:hidden;
+  }
+  .ecard:hover{transform:translateY(-2px)}
+  .ecard:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+  .ecard .date{
+    position:absolute;top:0;right:0;background:linear-gradient(150deg,var(--terra),#A83E2C);
+    color:#fff;text-align:center;padding:9px 14px 10px;border-bottom-left-radius:18px;
+    box-shadow:-3px 4px 10px -4px var(--shadow);
+  }
+  .ecard .date b{display:block;font-family:"Fraunces",serif;font-size:23px;font-weight:900;line-height:.9}
+  .ecard .date i{font-style:normal;font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+  .ecard h3{font-family:"Fraunces",serif;font-weight:700;font-size:20px;max-width:74%;margin-bottom:6px}
+  .meta{display:flex;align-items:center;gap:6px;color:var(--ink-soft);font-weight:700;font-size:13px;margin-bottom:4px}
+  .meta svg{width:15px;height:15px;flex:none}
+  .pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .pill{font-size:12px;font-weight:800;padding:5px 11px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink-soft)}
+  .pill.live{background:color-mix(in srgb,var(--green) 18%,var(--surface));border-color:var(--green);color:var(--green-deep)}
+  [data-mode="dark"] .pill.live{color:#9fe3bb}
+
+  /* ---------- EVENT DETAIL ---------- */
+  .backbtn{display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--ink-soft);font-weight:800;font-size:13.5px;cursor:pointer;padding:10px 0 4px;font-family:inherit}
+  .backbtn svg{width:16px;height:16px}
+  .ehero{background:var(--surface);border:1px solid var(--line);border-radius:var(--card-radius);padding:18px;margin-bottom:6px;box-shadow:0 5px 0 var(--line)}
+  .ehero h2{font-family:"Fraunces",serif;font-size:25px;font-weight:800;margin-bottom:8px}
+  .ehero .links{display:flex;gap:8px;margin-top:14px}
+  .iconbtn{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);display:grid;place-items:center;color:var(--ink-soft);cursor:pointer}
+  .iconbtn svg{width:18px;height:18px}
+
+  .rowhead{display:flex;align-items:center;justify-content:space-between;margin:20px 2px 10px}
+  .rowhead h4{font-family:"Fraunces",serif;font-size:18px;font-weight:700}
+  .addbtn{background:linear-gradient(150deg,var(--green),var(--green-deep));color:#fff;border:none;font-family:inherit;font-weight:900;font-size:13px;padding:9px 14px;border-radius:12px;cursor:pointer;box-shadow:0 4px 0 var(--green-deep),0 8px 14px -6px var(--shadow);display:flex;align-items:center;gap:6px}
+  .addbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--green-deep)}
+  .addbtn svg{width:15px;height:15px}
+
+  .search-row{display:flex;align-items:center;gap:13px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:13px;margin-bottom:11px;cursor:pointer;box-shadow:0 4px 0 var(--line);transition:transform .12s ease}
+  .search-row:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+  .gicon{width:50px;height:50px;border-radius:13px;flex:none;display:grid;place-items:center;font-size:24px;border:1px solid var(--line)}
+  .search-row .info{flex:1;min-width:0}
+  .search-row .info b{font-family:"Fraunces",serif;font-size:16px;font-weight:700;display:block}
+  .search-row .info small{color:var(--ink-soft);font-weight:700;font-size:12.5px}
+  .seatcount{font-weight:900;font-size:13px;color:var(--green-deep);display:flex;align-items:center;gap:5px;white-space:nowrap}
+  [data-mode="dark"] .seatcount{color:#7fd6a3}
+  .seatcount.full{color:var(--ink-soft)}
+
+  /* ---------- BOARD / SPIELFELD ---------- */
+  .seg{display:flex;gap:5px;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:5px;margin:6px 0 16px}
+  .seg button{flex:1;border:none;background:none;font-family:inherit;font-weight:800;font-size:12.5px;color:var(--ink-soft);padding:9px 4px;border-radius:10px;cursor:pointer;transition:all .18s ease}
+  .seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 2px 6px -2px var(--shadow)}
+
+  .hint{font-size:12px;font-weight:700;color:var(--ink-soft);text-align:center;margin:-8px 0 14px;display:flex;gap:6px;justify-content:center;align-items:center}
+  .hint svg{width:14px;height:14px}
+
+  /* themed table */
+  .board{
+    --felt:var(--green);--feltdark:var(--green-deep);--rim:var(--wood);--rimdark:var(--wood-deep);
+    --pat:transparent;--banner:linear-gradient(150deg,var(--green),var(--green-deep));
+    border-radius:24px;padding:18px;position:relative;overflow:hidden;
+    background:
+      var(--pat),
+      radial-gradient(130% 120% at 50% 0%, color-mix(in srgb,var(--felt) 88%,#fff 4%), var(--feltdark));
+    border:7px solid var(--rim);
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.18), inset 0 -24px 40px -20px rgba(0,0,0,.5), 0 16px 30px -16px var(--shadow-strong);
+    margin-bottom:18px;
+  }
+  .board .game-tag{display:inline-flex;align-items:center;gap:8px;background:rgba(0,0,0,.22);color:#fff;font-weight:900;font-size:12px;letter-spacing:.04em;padding:6px 13px;border-radius:999px;backdrop-filter:blur(2px)}
+  .board h3{font-family:"Fraunces",serif;color:#fff;font-size:25px;font-weight:900;margin:12px 0 2px;text-shadow:0 2px 6px rgba(0,0,0,.4)}
+  .board .sub{color:rgba(255,255,255,.82);font-weight:800;font-size:12.5px;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .board .crest{position:absolute;top:-18px;right:-12px;font-size:120px;opacity:.13;transform:rotate(-12deg);pointer-events:none}
+
+  /* THEME: catan / mittelalter */
+  .board[data-theme="catan"]{
+    --felt:#C58A4A;--feltdark:#8A5A28;--rim:#5E3C1E;--rimdark:#3E2712;
+    --pat:repeating-linear-gradient(60deg, rgba(255,255,255,.05) 0 2px, transparent 2px 26px),
+          repeating-linear-gradient(-60deg, rgba(0,0,0,.06) 0 2px, transparent 2px 26px);
+  }
+  /* THEME: jassen / holz-jasserteppich */
+  .board[data-theme="jassen"]{
+    --felt:#1F7A4D;--feltdark:#0F4E30;--rim:#7A4A22;--rimdark:#4A2A12;
+    --pat:repeating-linear-gradient(45deg, rgba(255,255,255,.045) 0 6px, transparent 6px 16px);
+    border-style:double;border-width:9px;
+  }
+  .board[data-theme="jassen"]::before{
+    content:"";position:absolute;inset:12px;border:2px dashed rgba(255,255,255,.28);border-radius:14px;pointer-events:none;
+  }
+
+  /* seats */
+  .seats{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:4px}
+  .seat{
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px;
+    display:flex;flex-direction:column;align-items:center;gap:8px;min-height:118px;justify-content:center;
+    box-shadow:0 4px 0 var(--line);position:relative;
+  }
+  .seat.taken{background:var(--surface)}
+  .seat.you{border-color:var(--gold);box-shadow:0 4px 0 var(--gold), 0 0 0 3px color-mix(in srgb,var(--gold) 35%,transparent)}
+  .seat .meeple{width:42px;height:42px}
+  .seat .pname{font-weight:900;font-size:13.5px;line-height:1}
+  .seat .skill{font-size:10.5px;font-weight:900;letter-spacing:.04em;padding:3px 9px;border-radius:999px;text-transform:uppercase}
+  .sk-adv{background:color-mix(in srgb,var(--terra) 16%,var(--surface));color:var(--terra)}
+  .sk-beg{background:color-mix(in srgb,var(--green) 18%,var(--surface));color:var(--green-deep)}
+  .sk-learn{background:color-mix(in srgb,var(--gold) 22%,var(--surface));color:#9a7414}
+  [data-mode="dark"] .sk-learn{color:var(--gold)}
+  [data-mode="dark"] .sk-beg{color:#7fd6a3}
+
+  .seat.empty{border-style:dashed;background:var(--surface-2);cursor:pointer}
+  .seat.empty .ring{width:42px;height:42px;border-radius:50%;border:2.5px dashed var(--ink-soft);opacity:.5;display:grid;place-items:center;font-size:22px;color:var(--ink-soft)}
+  .seat.empty small{font-weight:800;color:var(--ink-soft);font-size:12px}
+  .joinbtn{background:var(--ink);color:var(--bg);border:none;font-family:inherit;font-weight:900;font-size:12px;padding:7px 14px;border-radius:10px;cursor:pointer}
+  [data-mode="dark"] .joinbtn{background:var(--gold);color:#231a10}
+
+  .legend{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+
+  /* ---------- PROFILE TRADING CARD ---------- */
+  .cardwrap{perspective:1200px;padding:8px 4px 4px;display:flex;justify-content:center}
+  .tcard{
+    width:100%;max-width:330px;border-radius:24px;position:relative;overflow:hidden;
+    padding:6px;
+    background:
+      linear-gradient(135deg,var(--gold),#B9831C 45%,var(--gold) 70%,#8a5f12);
+    box-shadow:0 20px 40px -18px var(--shadow-strong),0 2px 0 rgba(255,255,255,.3) inset;
+    transform:rotateX(3deg);
+  }
+  .tcard .foil{position:absolute;inset:0;z-index:5;pointer-events:none;mix-blend-mode:overlay;
+    background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.55) 45%,rgba(180,220,255,.4) 50%,transparent 62%);
+    background-size:250% 250%;animation:foil 5.5s ease-in-out infinite}
+  @keyframes foil{0%{background-position:120% 0}50%{background-position:-30% 0}100%{background-position:120% 0}}
+  .tcard .inner{
+    background:radial-gradient(120% 80% at 50% 0%, var(--surface), var(--surface-2));
+    border-radius:19px;padding:16px 16px 18px;position:relative;z-index:2;
+    border:1px solid rgba(255,255,255,.25);
+  }
+  .tcard .ttop{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .tcard .role{font-weight:900;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--terra)}
+  .tcard .rar{font-family:"Fraunces",serif;font-weight:900;font-size:13px;color:var(--gold);display:flex;align-items:center;gap:4px}
+  .tcard .rar svg{width:14px;height:14px}
+  .avatar{width:96px;height:96px;border-radius:20px;margin:2px auto 10px;display:grid;place-items:center;
+    background:radial-gradient(120% 120% at 30% 20%,var(--green),var(--green-deep));
+    box-shadow:0 8px 18px -8px var(--shadow-strong),0 0 0 4px var(--surface),0 0 0 5px var(--gold)}
+  .avatar .meeple{width:58px;height:58px}
+  .tcard .pname2{font-family:"Fraunces",serif;font-weight:900;font-size:23px;text-align:center;line-height:1}
+  .tcard .handle{text-align:center;font-weight:800;font-size:12px;color:var(--ink-soft);margin:3px 0 14px}
+
+  .trust{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:13px}
+  .trust .sh{width:34px;height:34px;color:var(--green)}
+  .trust b{font-family:"Fraunces",serif;font-size:26px;font-weight:900;line-height:1}
+  .trust small{display:block;font-size:10.5px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:13px}
+  .stat{background:var(--surface-2);border:1px solid var(--line);border-radius:13px;padding:10px 6px;text-align:center}
+  .stat b{font-family:"Fraunces",serif;font-size:20px;font-weight:900;display:block;line-height:1}
+  .stat small{font-size:9.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);display:block;margin-top:4px}
+
+  .favs{font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 7px 2px}
+  .badges{display:flex;gap:7px;flex-wrap:wrap}
+  .badge{font-size:11.5px;font-weight:800;padding:6px 11px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;gap:5px}
+  .badge.gold{background:color-mix(in srgb,var(--gold) 20%,var(--surface));border-color:var(--gold)}
+
+  /* ---------- BOTTOM NAV ---------- */
+  .nav{
+    position:sticky;bottom:0;z-index:30;display:flex;
+    background:color-mix(in srgb,var(--surface) 92%,transparent);
+    backdrop-filter:blur(12px);border-top:1px solid var(--line);
+    padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+  }
+  .nav button{flex:1;background:none;border:none;cursor:pointer;font-family:inherit;color:var(--ink-soft);
+    display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;border-radius:12px;font-weight:900;font-size:10.5px;letter-spacing:.04em}
+  .nav button svg{width:23px;height:23px}
+  .nav button.on{color:var(--green-deep)}
+  [data-mode="dark"] .nav button.on{color:#5fcf8f}
+
+  /* ---------- CREATE WIZARD ---------- */
+  .steps{display:flex;gap:6px;margin:8px 2px 18px}
+  .steps .st{flex:1;height:5px;border-radius:999px;background:var(--line);transition:background .3s ease}
+  .steps .st.on{background:var(--green)}
+  .cstep{display:none}
+  .cstep.on{display:block;animation:fade .3s ease both}
+  .qlabel{font-family:"Fraunces",serif;font-weight:800;font-size:23px;margin:2px 2px 16px}
+  .loc-opt{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:13px;margin-bottom:10px;cursor:pointer;box-shadow:0 4px 0 var(--line);transition:transform .12s ease}
+  .loc-opt:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+  .loc-opt .lic{width:44px;height:44px;border-radius:12px;flex:none;display:grid;place-items:center;font-size:20px;background:var(--surface-2);border:1px solid var(--line)}
+  .loc-opt .info b{font-family:"Fraunces",serif;font-size:16px;display:block}
+  .loc-opt .info small{color:var(--ink-soft);font-weight:700;font-size:12px}
+  .loc-opt.dashed{border-style:dashed;background:var(--surface-2)}
+  .txt{width:100%;font-family:inherit;font-weight:700;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 3px 0 var(--line)}
+  .txt::placeholder{color:var(--ink-soft);font-weight:600}
+  .acgroup{font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:18px 2px 9px}
+  .acitem{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px;margin-bottom:8px;cursor:pointer;transition:transform .1s ease;box-shadow:0 3px 0 var(--line)}
+  .acitem:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
+  .acitem .gi{width:40px;height:40px;border-radius:11px;flex:none;display:grid;place-items:center;font-size:20px;background:var(--surface-2);border:1px solid var(--line)}
+  .acitem .gi.add{border-style:dashed;color:var(--green-deep);font-weight:900;font-size:24px}
+  .acitem b{font-family:"Fraunces",serif;font-size:15.5px}
+  .acitem .tag{margin-left:auto;font-size:10px;font-weight:900;letter-spacing:.03em;text-transform:uppercase;padding:4px 9px;border-radius:999px;white-space:nowrap}
+  .tag.site{background:color-mix(in srgb,var(--green) 18%,var(--surface));color:var(--green-deep)}
+  .tag.bring{background:color-mix(in srgb,var(--gold) 24%,var(--surface));color:#946f12}
+  [data-mode="dark"] .tag.site{color:#7fd6a3}
+  [data-mode="dark"] .tag.bring{color:var(--gold)}
+  .newgame{background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:15px;margin-top:6px}
+  .summary{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:13px;margin-bottom:10px;box-shadow:0 4px 0 var(--line)}
+  .summary .gi{width:46px;height:46px;border-radius:12px;flex:none;display:grid;place-items:center;font-size:22px;background:var(--surface-2);border:1px solid var(--line)}
+  .summary b{font-family:"Fraunces",serif;font-size:16.5px;display:block;line-height:1.1}
+  .summary small{color:var(--ink-soft);font-weight:700;font-size:12px}
+  .flabel{font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin:18px 2px 9px}
+  .stepper{display:flex;align-items:center;gap:13px}
+  .stepper button{width:46px;height:46px;border-radius:13px;border:1px solid var(--line);background:var(--surface);font-size:24px;font-weight:900;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--line);line-height:1}
+  .stepper button:active{transform:translateY(2px);box-shadow:none}
+  .stepper b{font-family:"Fraunces",serif;font-size:25px;min-width:30px;text-align:center}
+  .seg2{display:flex;gap:8px}
+  .seg2 button{flex:1;border:1px solid var(--line);background:var(--surface);font-family:inherit;font-weight:800;font-size:13.5px;color:var(--ink-soft);padding:13px 8px;border-radius:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
+  .seg2 button.on{background:color-mix(in srgb,var(--green) 14%,var(--surface));border-color:var(--green);color:var(--green-deep)}
+  [data-mode="dark"] .seg2 button.on{color:#7fd6a3}
+  .seg2 button svg{width:16px;height:16px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);background:var(--surface);font-family:inherit;font-weight:800;font-size:13px;color:var(--ink-soft);padding:9px 14px;border-radius:999px;cursor:pointer}
+  .chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  [data-mode="dark"] .chip.on{background:var(--gold);color:#231a10;border-color:var(--gold)}
+  .primary{width:100%;margin-top:22px;background:linear-gradient(150deg,var(--terra),#A83E2C);color:#fff;border:none;font-family:inherit;font-weight:900;font-size:16px;padding:16px;border-radius:16px;cursor:pointer;box-shadow:0 5px 0 #8f3525,0 12px 20px -8px var(--shadow);display:flex;align-items:center;justify-content:center;gap:9px}
+  .primary svg{width:20px;height:20px}
+  .primary:active{transform:translateY(4px);box-shadow:0 1px 0 #8f3525}
+
+  :focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-radius:8px}
+  @media(prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M12 2c-1.6 0-2.9 1.4-2.9 3.1 0 .9.4 1.7 1 2.3-1.8.7-3.1 2.5-3.1 4.6V21a1 1 0 0 0 1 1h1.5v-3a2.5 2.5 0 0 1 5 0v3H17a1 1 0 0 0 1-1v-9c0-2.1-1.3-3.9-3.1-4.6.6-.6 1-1.4 1-2.3C15.9 3.4 14.6 2 12 2Z"/></svg>
+      </div>
+      <div>
+        <h1>Tischrunde</h1>
+        <span>Dreiländereck</span>
+      </div>
+    </div>
+    <button class="modebtn" id="modebtn" aria-label="Hell/Dunkel umschalten">
+      <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+      <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8 6 18M18 6l1.8-1.8"/></svg>
+    </button>
+  </header>
+
+  <div class="scroll">
+
+    <!-- ============ SCREEN: EVENTS ============ -->
+    <section class="screen active" id="screen-events">
+      <p class="eyebrow">Nächste Treffen</p>
+      <h2 class="h2">Find dein Spiel.</h2>
+      <p class="lead">Offene Runden in deiner Nähe – beitreten oder eigene eröffnen.</p>
+
+      <article class="ecard" onclick="goEvent()">
+        <div class="date"><b>28</b><i>Juni</i></div>
+        <h3>Spielerei Dornbirn</h3>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Jugendhaus · Dornbirn</div>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 14:00 – 18:00 Uhr</div>
+        <div class="pill-row">
+          <span class="pill live">● 4 offene Runden</span>
+          <span class="pill">Spenden → Pfadfinder</span>
+        </div>
+      </article>
+
+      <article class="ecard" onclick="goEvent()">
+        <div class="date"><b>12</b><i>Juli</i></div>
+        <h3>TCG-Abend &amp; Tausch</h3>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Café Würfel · Bregenz</div>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 18:30 – 23:00 Uhr</div>
+        <div class="pill-row">
+          <span class="pill live">● 6 offene Runden</span>
+          <span class="pill">Pokémon · Magic · One Piece</span>
+        </div>
+      </article>
+
+      <article class="ecard" onclick="goEvent()">
+        <div class="date"><b>20</b><i>Juli</i></div>
+        <h3>Jass-Stammtisch</h3>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Gasthof Krone · Lustenau</div>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 19:00 – open end</div>
+        <div class="pill-row"><span class="pill live">● 3 offene Runden</span></div>
+      </article>
+    </section>
+
+    <!-- ============ SCREEN: EVENT DETAIL ============ -->
+    <section class="screen" id="screen-event">
+      <button class="backbtn" onclick="show('screen-events')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> Alle Treffen</button>
+      <div class="ehero">
+        <span class="pill live" style="margin-bottom:10px;display:inline-block">28. Juni · 14:00 Uhr</span>
+        <h2>Spielerei Dornbirn</h2>
+        <div class="meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> Jugendhaus, Dornbirn</div>
+        <p style="color:var(--ink-soft);font-weight:600;font-size:13.5px;margin-top:10px">Offener Brett- &amp; Kartenspiel-Nachmittag. Komm vorbei, alle Einnahmen gehen an die Pfadfinder.</p>
+        <div class="links">
+          <a class="iconbtn" href="#" onclick="return false" aria-label="Website"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18"/></svg></a>
+          <a class="iconbtn" href="#" onclick="return false" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg></a>
+        </div>
+      </div>
+
+      <div class="rowhead">
+        <h4>Offene Runden</h4>
+        <button class="addbtn" onclick="openCreate()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Neue Runde</button>
+      </div>
+
+      <div class="search-row" onclick="goBoard('catan','Catan','Aufbau · Mittelalter')">
+        <div class="gicon" style="background:color-mix(in srgb,#C58A4A 22%,var(--surface))">🏘️</div>
+        <div class="info"><b>Catan</b><small>Tisch 3 · sucht Aufbaustrategen</small></div>
+        <span class="seatcount">2/4 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 2.7-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6M21 20c0-2.4-1.4-4.2-3.5-4.8"/></svg></span>
+      </div>
+
+      <div class="search-row" onclick="goBoard('jassen','Jassen','Vorarlberger Differenzler')">
+        <div class="gicon" style="background:color-mix(in srgb,#1F7A4D 20%,var(--surface))">🃏</div>
+        <div class="info"><b>Jassen</b><small>Differenzler · zu viert</small></div>
+        <span class="seatcount">3/4 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 2.7-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6M21 20c0-2.4-1.4-4.2-3.5-4.8"/></svg></span>
+      </div>
+
+      <div class="search-row" onclick="goBoard('standard','Wingspan','Entspannt · Anfänger willkommen')">
+        <div class="gicon" style="background:color-mix(in srgb,var(--green) 18%,var(--surface))">🐦</div>
+        <div class="info"><b>Wingspan</b><small>Anfänger willkommen</small></div>
+        <span class="seatcount">1/5 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 2.7-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6M21 20c0-2.4-1.4-4.2-3.5-4.8"/></svg></span>
+      </div>
+
+      <div class="search-row" onclick="goBoard('catan','Carcassonne','Tisch 1 · läuft schon')" style="opacity:.62">
+        <div class="gicon" style="background:var(--surface-2)">🧩</div>
+        <div class="info"><b>Carcassonne</b><small>voll besetzt</small></div>
+        <span class="seatcount full">4/4</span>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN: BOARD ============ -->
+    <section class="screen" id="screen-board">
+      <button class="backbtn" onclick="show('screen-event')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> Spielerei Dornbirn</button>
+
+      <p class="hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9.7 17h4.6M8 11a4 4 0 1 1 8 0c0 1.8-1.2 2.6-1.8 3.4-.3.4-.2 1.1-.2 1.6h-4c0-.5.1-1.2-.2-1.6C9 13.6 8 12.8 8 11Z"/></svg> Das Spielfeld passt sich dem Spiel an – hier zum Ausprobieren:</p>
+      <div class="seg" id="themeSeg">
+        <button data-t="standard" onclick="setTheme('standard','Wingspan','Entspannt · Anfänger willkommen')">Standard</button>
+        <button data-t="catan" class="on" onclick="setTheme('catan','Catan','Aufbau · Mittelalter')">Catan</button>
+        <button data-t="jassen" onclick="setTheme('jassen','Jassen','Vorarlberger Differenzler')">Jassen</button>
+      </div>
+
+      <div class="board" id="board" data-theme="catan">
+        <span class="crest" id="crest">🏘️</span>
+        <span class="game-tag" id="vis"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/></svg> Öffentlich findbar</span>
+        <h3 id="bTitle">Catan</h3>
+        <div class="sub" id="bSub">Aufbau · Mittelalter</div>
+      </div>
+
+      <div class="seats" id="seats"></div>
+
+      <div class="legend">
+        <span class="badge sk-beg">Anfänger</span>
+        <span class="badge sk-adv">Fortgeschritten</span>
+        <span class="badge sk-learn">Würde gern lernen</span>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN: CREATE WIZARD ============ -->
+    <section class="screen" id="screen-create">
+      <button class="backbtn" onclick="show('screen-event')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg> Abbrechen</button>
+      <div class="steps"><div class="st on" id="st1"></div><div class="st" id="st2"></div><div class="st" id="st3"></div></div>
+
+      <!-- step 1: location -->
+      <div class="cstep on" id="cstep1">
+        <p class="qlabel">Wo wird gespielt?</p>
+        <div id="locList"></div>
+        <div class="loc-opt dashed" onclick="alert('Neue Location anlegen — im echten Flow: Name, Adresse, Socials und der Spiele-Bestand der Location.')">
+          <div class="lic">➕</div><div class="info"><b>Neue Location anlegen</b><small>Café, Verein oder zuhause</small></div>
+        </div>
+      </div>
+
+      <!-- step 2: game -->
+      <div class="cstep" id="cstep2">
+        <p class="qlabel">Welches Spiel?</p>
+        <input class="txt" id="gameSearch" placeholder="Spiel suchen… (z. B. Catan, Jass, Brass)" oninput="acRender(this.value)" autocomplete="off">
+        <div id="acResults"></div>
+        <div class="newgame" id="newGameForm" style="display:none">
+          <p class="flabel" style="margin-top:0">Neues Spiel anlegen</p>
+          <input class="txt" id="ngName" placeholder="Spielname">
+          <p class="flabel">Kategorie <span style="text-transform:none;font-weight:700">(bestimmt das Spielfeld-Theme)</span></p>
+          <div class="chips" id="ngTheme">
+            <button class="chip on" data-th="standard" onclick="ngPick(this)">Allgemein</button>
+            <button class="chip" data-th="catan" onclick="ngPick(this)">Aufbau/Mittelalter</button>
+            <button class="chip" data-th="jassen" onclick="ngPick(this)">Karten/Jass</button>
+            <button class="chip" data-th="standard" onclick="ngPick(this)">TCG</button>
+          </div>
+          <button class="primary" style="margin-top:16px" onclick="createGame()">Anlegen &amp; mitbringen</button>
+        </div>
+      </div>
+
+      <!-- step 3: details -->
+      <div class="cstep" id="cstep3">
+        <p class="qlabel">Runden-Details</p>
+        <div class="summary" id="sumGame"></div>
+        <div class="summary" id="sumLoc"></div>
+
+        <p class="flabel">Spielerzahl</p>
+        <div class="stepper">
+          <button onclick="pc(-1)" aria-label="weniger">−</button>
+          <b id="pcVal">4</b>
+          <button onclick="pc(1)" aria-label="mehr">+</button>
+          <small style="color:var(--ink-soft);font-weight:700;font-size:12.5px;margin-left:4px">Plätze gesamt</small>
+        </div>
+
+        <p class="flabel">Sichtbarkeit</p>
+        <div class="seg2" id="visSeg">
+          <button class="on" onclick="setVis(this,'Öffentlich findbar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/></svg> Öffentlich</button>
+          <button onclick="setVis(this,'Privat · nur Einladung')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> Nur Einladung</button>
+        </div>
+
+        <p class="flabel">Wen suchst du?</p>
+        <div class="chips" id="skillChips">
+          <button class="chip on" onclick="setSkill(this)">Egal</button>
+          <button class="chip" onclick="setSkill(this)">Anfänger</button>
+          <button class="chip" onclick="setSkill(this)">Fortgeschritten</button>
+          <button class="chip" onclick="setSkill(this)">Lernende willkommen</button>
+        </div>
+
+        <button class="primary" onclick="openRound()">Runde eröffnen <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" fill="rgba(255,255,255,.22)"/><circle cx="8.5" cy="8.5" r="1.7" fill="#fff"/><circle cx="15.5" cy="15.5" r="1.7" fill="#fff"/><circle cx="15.5" cy="8.5" r="1.7" fill="#fff"/><circle cx="8.5" cy="15.5" r="1.7" fill="#fff"/></svg></button>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN: PROFILE ============ -->
+    <section class="screen" id="screen-profile">
+      <p class="eyebrow" style="text-align:center;margin-top:18px">Deine Spielerkarte</p>
+      <div class="cardwrap">
+        <div class="tcard">
+          <div class="foil"></div>
+          <div class="inner">
+            <div class="ttop">
+              <span class="role">Vielspieler</span>
+              <span class="rar"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.5 6.8L12 17.8 5.9 20.4l1.5-6.8L2.3 9l6.9-.7L12 2Z"/></svg> Rar</span>
+            </div>
+            <div class="avatar">
+              <svg class="meeple" viewBox="0 0 24 24" fill="#fff"><path d="M12 2c-1.6 0-2.9 1.4-2.9 3.1 0 .9.4 1.7 1 2.3-1.8.7-3.1 2.5-3.1 4.6V21a1 1 0 0 0 1 1h1.5v-3a2.5 2.5 0 0 1 5 0v3H17a1 1 0 0 0 1-1v-9c0-2.1-1.3-3.9-3.1-4.6.6-.6 1-1.4 1-2.3C15.9 3.4 14.6 2 12 2Z"/></svg>
+            </div>
+            <div class="pname2">Andrin K.</div>
+            <div class="handle">@andrin · Dornbirn</div>
+
+            <div class="trust">
+              <svg class="sh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 2.5v5.5c0 5-3.4 8.4-7 9.5-3.6-1.1-7-4.5-7-9.5V5.5L12 3Z"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div><b>4,9</b><small>Trust-Score · 37 Bewertungen</small></div>
+            </div>
+
+            <div class="stats">
+              <div class="stat"><b>128</b><small>Runden</small></div>
+              <div class="stat"><b>96%</b><small>Anwesend</small></div>
+              <div class="stat"><b>14</b><small>Tausche</small></div>
+            </div>
+
+            <p class="favs">Lieblingsspiele</p>
+            <div class="badges">
+              <span class="badge">🏘️ Catan</span>
+              <span class="badge">🃏 Jassen</span>
+              <span class="badge gold">⚡ Pokémon TCG</span>
+            </div>
+            <p class="favs" style="margin-top:14px">Abzeichen</p>
+            <div class="badges">
+              <span class="badge gold">🛡️ Verlässlich</span>
+              <span class="badge">🎓 Erklärt gern</span>
+              <span class="badge">🤝 Fairer Tauscher</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="lead" style="text-align:center;margin-top:16px;padding:0 10px">Im ersten Release Platzhalter – Stats &amp; Trust wachsen später automatisch aus deinen Runden.</p>
+    </section>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="nav">
+    <button class="on" id="nav-events" onclick="show('screen-events')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4.5" width="18" height="16" rx="3"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg>
+      Treffen
+    </button>
+    <button id="nav-board" onclick="show('screen-board')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 2.7-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6M21 20c0-2.4-1.4-4.2-3.5-4.8"/></svg>
+      Runden
+    </button>
+    <button id="nav-profile" onclick="show('screen-profile')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="3" width="16" height="18" rx="3"/><circle cx="12" cy="9" r="2.6"/><path d="M8.5 17c.4-2 1.8-3 3.5-3s3.1 1 3.5 3"/></svg>
+      Karte
+    </button>
+  </nav>
+</div>
+
+<script>
+  const app = document.getElementById('app');
+
+  /* light / dark */
+  document.getElementById('modebtn').onclick = () => {
+    app.setAttribute('data-mode', app.getAttribute('data-mode') === 'light' ? 'dark' : 'light');
+  };
+
+  /* screen switching */
+  const navMap = {'screen-events':'nav-events','screen-event':'nav-board','screen-board':'nav-board','screen-profile':'nav-profile'};
+  function show(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id===id));
+    document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('on'));
+    document.getElementById(navMap[id])?.classList.add('on');
+    document.querySelector('.scroll').scrollTop = 0;
+  }
+  function goEvent(){ show('screen-event'); }
+
+  /* seat data per theme */
+  const SEATS = {
+    catan:   [{n:'Lea',s:'adv',c:'#C8553D'},{n:'Tobias',s:'adv',c:'#2F7D4F'},'empty','empty'],
+    jassen:  [{n:'Hannes',s:'adv',c:'#7A4A22'},{n:'Marlis',s:'adv',c:'#1F7A4D'},{n:'Werner',s:'adv',c:'#C8553D'},'empty'],
+    standard:[{n:'Sophie',s:'beg',c:'#2F7D4F'},'empty','empty','empty','empty']
+  };
+  const SK = {adv:['sk-adv','Fortgeschritten'],beg:['sk-beg','Anfänger'],learn:['sk-learn','Lernt gern']};
+
+  function meeple(color){
+    return `<svg class="meeple" viewBox="0 0 24 24" fill="${color}"><path d="M12 2c-1.6 0-2.9 1.4-2.9 3.1 0 .9.4 1.7 1 2.3-1.8.7-3.1 2.5-3.1 4.6V21a1 1 0 0 0 1 1h1.5v-3a2.5 2.5 0 0 1 5 0v3H17a1 1 0 0 0 1-1v-9c0-2.1-1.3-3.9-3.1-4.6.6-.6 1-1.4 1-2.3C15.9 3.4 14.6 2 12 2Z"/></svg>`;
+  }
+  function renderSeats(theme){
+    const box = document.getElementById('seats');
+    box.innerHTML = '';
+    SEATS[theme].forEach((p,i)=>{
+      const d = document.createElement('div');
+      if(p==='empty'){
+        d.className='seat empty';
+        d.innerHTML=`<div class="ring">+</div><small>Platz frei</small><button class="joinbtn" onclick="joinSeat(this,'${theme}')">Beitreten</button>`;
+      }else{
+        d.className='seat taken';
+        d.innerHTML=`${meeple(p.c)}<div class="pname">${p.n}</div><span class="skill ${SK[p.s][0]}">${SK[p.s][1]}</span>`;
+      }
+      box.appendChild(d);
+    });
+  }
+  function joinSeat(btn,theme){
+    const seat = btn.closest('.seat');
+    seat.className='seat taken you';
+    seat.innerHTML=`${meeple('#E0A82E')}<div class="pname">Du</div><span class="skill sk-learn">Lernt gern</span>`;
+  }
+
+  const CRESTS = {catan:'🏘️',jassen:'🃏',standard:'🐦'};
+  function setTheme(t,title,sub){
+    document.getElementById('board').setAttribute('data-theme',t);
+    document.getElementById('bTitle').textContent=title;
+    document.getElementById('bSub').textContent=sub;
+    document.getElementById('crest').textContent=CRESTS[t];
+    document.querySelectorAll('#themeSeg button').forEach(b=>b.classList.toggle('on', b.dataset.t===t));
+    renderSeats(t);
+  }
+  function goBoard(t,title,sub){ setTheme(t,title,sub); show('screen-board'); }
+
+  /* ===== CREATE WIZARD ===== */
+  const GAMES=[
+    {id:'catan',name:'Catan',th:'catan',ic:'🏘️',min:3,max:4},
+    {id:'carc',name:'Carcassonne',th:'catan',ic:'🧩',min:2,max:5},
+    {id:'wing',name:'Wingspan',th:'standard',ic:'🐦',min:1,max:5},
+    {id:'azul',name:'Azul',th:'standard',ic:'🟦',min:2,max:4},
+    {id:'sev',name:'7 Wonders',th:'standard',ic:'🏛️',min:3,max:7},
+    {id:'jass',name:'Jassen',th:'jassen',ic:'🃏',min:4,max:4},
+    {id:'poke',name:'Pokémon TCG',th:'standard',ic:'⚡',min:2,max:2},
+    {id:'mtg',name:'Magic: The Gathering',th:'standard',ic:'🔮',min:2,max:2}
+  ];
+  const LOCS=[
+    {id:'spielerei',name:'Spielerei Dornbirn',sub:'Event · heute 14:00',ic:'🎪'},
+    {id:'wuerfel',name:'Café Würfel',sub:'Bregenz · verifiziert',ic:'🏠'},
+    {id:'krone',name:'Gasthof Krone',sub:'Lustenau',ic:'🍺'},
+    {id:'home',name:'Bei mir zuhause',sub:'Privat',ic:'🛋️'}
+  ];
+  const LOCGAMES={spielerei:['catan','carc','wing','azul'],wuerfel:['poke','mtg','sev'],krone:['jass'],home:[]};
+  const cs={locId:null,locName:'',game:null,source:'on_site',players:4,vis:'Öffentlich findbar',skill:'Egal'};
+
+  function openCreate(){
+    cs.locId=null;
+    document.getElementById('locList').innerHTML = LOCS.map(l=>
+      `<div class="loc-opt" onclick="selectLoc('${l.id}','${l.name}')"><div class="lic">${l.ic}</div><div class="info"><b>${l.name}</b><small>${l.sub}</small></div></div>`).join('');
+    cStep(1); show('screen-create');
+  }
+  function cStep(n){
+    [1,2,3].forEach(i=>{
+      document.getElementById('cstep'+i).classList.toggle('on', i===n);
+      document.getElementById('st'+i).classList.toggle('on', i<=n);
+    });
+    document.querySelector('.scroll').scrollTop=0;
+  }
+  function selectLoc(id,name){
+    cs.locId=id; cs.locName=name;
+    document.getElementById('gameSearch').value='';
+    document.getElementById('newGameForm').style.display='none';
+    acRender(''); cStep(2);
+  }
+  function acItem(g,source,cls,label){
+    return `<div class="acitem" onclick="pickGame('${g.id}','${source}')"><div class="gi">${g.ic}</div><b>${g.name}</b><span class="tag ${cls}">${label}</span></div>`;
+  }
+  function acRender(q){
+    const box=document.getElementById('acResults');
+    document.getElementById('newGameForm').style.display='none';
+    const ql=q.trim().toLowerCase();
+    const onIds=LOCGAMES[cs.locId]||[];
+    const matches=GAMES.filter(g=>g.name.toLowerCase().includes(ql));
+    const onsite = ql==='' ? GAMES.filter(g=>onIds.includes(g.id)) : matches.filter(g=>onIds.includes(g.id));
+    const other  = ql==='' ? [] : matches.filter(g=>!onIds.includes(g.id));
+    let html='';
+    if(onsite.length) html+=`<p class="acgroup">📍 Vor Ort verfügbar</p>`+onsite.map(g=>acItem(g,'on_site','site','Vor Ort')).join('');
+    if(other.length)  html+=`<p class="acgroup">In der Datenbank · mitbringen</p>`+other.map(g=>acItem(g,'brought','bring','Mitbringen')).join('');
+    if(ql!=='' && matches.length===0){
+      const safe=q.replace(/['"\\]/g,'');
+      html+=`<p class="acgroup">Nicht gefunden</p><div class="acitem" onclick="showNewGame('${safe}')"><div class="gi add">+</div><b>„${safe}" neu anlegen</b></div>`;
+    }
+    box.innerHTML=html;
+  }
+  function pickGame(id,source){ cs.game=GAMES.find(g=>g.id===id); cs.source=source; goStep3(); }
+  function showNewGame(q){
+    document.getElementById('acResults').innerHTML='';
+    document.getElementById('ngName').value=q;
+    document.querySelectorAll('#ngTheme .chip').forEach((c,i)=>c.classList.toggle('on',i===0));
+    document.getElementById('newGameForm').style.display='block';
+  }
+  function ngPick(btn){ document.querySelectorAll('#ngTheme .chip').forEach(c=>c.classList.remove('on')); btn.classList.add('on'); }
+  function createGame(){
+    const name=document.getElementById('ngName').value.trim()||'Neues Spiel';
+    const th=document.querySelector('#ngTheme .chip.on').dataset.th;
+    cs.game={id:'custom',name,th,ic:'🎲',min:2,max:8}; cs.source='brought'; goStep3();
+  }
+  function goStep3(){
+    cs.players=Math.min(cs.game.max,6);
+    document.getElementById('pcVal').textContent=cs.players;
+    const srcTxt = cs.source==='on_site' ? '📍 Liegt vor Ort' : '🎒 Wird mitgebracht';
+    document.getElementById('sumGame').innerHTML=`<div class="gi">${cs.game.ic}</div><div><b>${cs.game.name}</b><small>${srcTxt}</small></div>`;
+    document.getElementById('sumLoc').innerHTML=`<div class="gi">📍</div><div><b>${cs.locName}</b><small>Veranstaltungsort</small></div>`;
+    cStep(3);
+  }
+  function pc(d){ cs.players=Math.max(cs.game?cs.game.min:2,Math.min(10,cs.players+d)); document.getElementById('pcVal').textContent=cs.players; }
+  function setVis(btn,v){ document.querySelectorAll('#visSeg button').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); cs.vis=v; }
+  function setSkill(btn){ document.querySelectorAll('#skillChips .chip').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); cs.skill=btn.textContent; }
+  function mapTheme(t){ return (t==='catan'||t==='jassen')?t:'standard'; }
+  function openRound(){
+    const th=mapTheme(cs.game.th);
+    document.getElementById('vis').innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/></svg> ${cs.vis}`;
+    setTheme(th, cs.game.name, `${cs.source==='on_site'?'Vor Ort':'Mitgebracht'} · sucht ${cs.skill} · ${cs.players} Plätze`);
+    show('screen-board');
+  }
+
+  /* init */
+  renderSeats('catan');
+</script>
+</body>
+</html>

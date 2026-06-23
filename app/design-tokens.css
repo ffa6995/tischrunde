@@ -1,0 +1,97 @@
+/* ============================================================
+   Tischrunde — Design-Tokens (Source of Truth)
+   In app/globals.css importieren. Light = :root, Dark = [data-theme="dark"].
+   Tailwind-Mapping-Snippet unten. Spielfeld-Themes via [data-board="..."].
+   ============================================================ */
+
+/* Font-Import liegt in app/globals.css ganz oben (muss allen Regeln vorausgehen). */
+
+:root {
+  /* base */
+  --bg: #EADBBE;
+  --bg-2: #E0CEA8;
+  --surface: #FBF4E6;
+  --surface-2: #F3E7CF;
+  --ink: #2C2018;
+  --ink-soft: #7A6650;
+  --line: #D8C39E;
+
+  /* accents */
+  --green: #2F7D4F;  --green-deep: #1E6340;
+  --wood: #A86B33;   --wood-deep: #6E4322;
+  --terra: #C8553D;
+  --gold: #E0A82E;
+
+  /* semantic — status (Runden) */
+  --status-open: var(--green);
+  --status-full: var(--ink-soft);
+  --status-requested: var(--gold);
+  --status-confirmed: var(--green-deep);
+  --status-cancelled: var(--terra);
+
+  /* semantic — skill */
+  --skill-beginner: var(--green-deep);
+  --skill-learning: #9A7414;     /* gold-ink, AA auf surface */
+  --skill-advanced: var(--terra);
+  --skill-any: var(--ink-soft);
+
+  /* semantic — trust signals */
+  --trust-verified: var(--green);
+  --trust-mentor: var(--gold);
+
+  /* semantic — feedback (soft) */
+  --success-soft: #2F7D4F;
+  --warning-soft: #B8801C;
+  --danger-soft: #B8492F;
+
+  /* shape & motion */
+  --radius: 18px;
+  --radius-lg: 24px;
+  --shadow: rgba(70,46,20,.20);
+  --shadow-strong: rgba(70,46,20,.32);
+  --motion-fast: .14s;
+  --motion-base: .3s;
+  --motion-slow: 5.5s;          /* foil loop */
+  --ease: cubic-bezier(.2,.7,.3,1);
+
+  /* fonts */
+  --font-display: "Fraunces", Georgia, serif;
+  --font-ui: "Nunito Sans", system-ui, sans-serif;
+}
+
+[data-theme="dark"] {
+  --bg: #191310;
+  --bg-2: #221913;
+  --surface: #2B2018;
+  --surface-2: #352718;
+  --ink: #F3E8D5;
+  --ink-soft: #B6A286;
+  --line: #43331F;
+
+  --green: #3FA066;  --green-deep: #2A6E47;
+  --wood: #B5793C;   --wood-deep: #3A2616;
+  --terra: #E0664A;
+  --gold: #F0C04A;
+
+  --skill-learning: var(--gold);
+  --shadow: rgba(0,0,0,.55);
+  --shadow-strong: rgba(0,0,0,.7);
+}
+
+/* ---------- Spielfeld-Themes (ein Layout, austauschbare Skins) ---------- */
+/* Auf dem .board-Element: data-board="standard|catan|jassen|tcg" */
+[data-board="standard"] { --felt: var(--green); --felt-deep: var(--green-deep); --rim: var(--wood); }
+[data-board="catan"]    { --felt: #C58A4A;     --felt-deep: #8A5A28;          --rim: #5E3C1E; }
+[data-board="jassen"]   { --felt: #1F7A4D;     --felt-deep: #0F4E30;          --rim: #7A4A22; }
+[data-board="tcg"]      { --felt: #2A2540;     --felt-deep: #16122A;          --rim: #3A2F5A; }
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* Hinweis: Dieses Projekt nutzt Tailwind v4. Das Token→Tailwind-Mapping
+   passiert per `@theme inline` in app/globals.css (nicht über eine
+   tailwind.config.ts). Das v3-Config-Snippet aus der Original-Datei wurde
+   hier entfernt, weil die Glob-Muster (`** / *`) den CSS-Kommentar vorzeitig
+   schließen und das Stylesheet zerschießen. */

@@ -89,6 +89,46 @@ export async function checkIn(
   });
 }
 
+/** Host bestätigt Anwesenheit eines Teilnehmers (Konzept §5.2). */
+export async function hostConfirmParticipant(
+  supabase: SupabaseClient,
+  searchId: string,
+  targetUserId: string,
+  hostId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("participants")
+    .update({ status: "confirmed" })
+    .eq("search_id", searchId)
+    .eq("user_id", targetUserId);
+  if (error) throw error;
+
+  await supabase.from("activity_events").insert({
+    user_id: targetUserId,
+    type: "host_confirmed",
+    source_type: "game_search",
+    source_id: searchId,
+    created_by: hostId,
+  });
+}
+
+/**
+ * Host entfernt einen Teilnehmer (respektvoll, vordefinierter Grund).
+ * KEIN Trust-Abzug (Konzept §9.3) — nur Status 'removed'.
+ */
+export async function removeParticipant(
+  supabase: SupabaseClient,
+  searchId: string,
+  targetUserId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("participants")
+    .update({ status: "removed" })
+    .eq("search_id", searchId)
+    .eq("user_id", targetUserId);
+  if (error) throw error;
+}
+
 export async function leaveRound(
   supabase: SupabaseClient,
   searchId: string,

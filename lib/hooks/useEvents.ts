@@ -18,13 +18,14 @@ export function useEvents() {
   });
 }
 
-export function useEvent(id: string) {
+export function useEvent(id: string | null | undefined) {
   const supabase = createClient();
   return useQuery<Event | null>({
     queryKey: ["event", id],
+    enabled: !!id,
     queryFn: () =>
       isSupabaseConfigured()
-        ? getEvent(supabase, id)
+        ? getEvent(supabase, id!)
         : Promise.resolve(DEMO_EVENTS.find((e) => e.id === id) ?? null),
   });
 }

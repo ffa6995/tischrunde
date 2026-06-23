@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, QrCode } from "lucide-react";
+import { Check, QrCode, ShieldCheck, X } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { Board } from "@/components/Board";
 import { Seat } from "@/components/Seat";
@@ -14,6 +14,7 @@ import { useRound, useJoinRound } from "@/lib/hooks/useRounds";
 import { useCheckIn } from "@/lib/hooks/useActivity";
 import { useEvent } from "@/lib/hooks/useEvents";
 import { useRealtimeRound } from "@/lib/hooks/useRealtimeRound";
+import { useHostActions } from "@/lib/hooks/useHostActions";
 import { useSession } from "@/lib/hooks/useSession";
 import {
   boardTheme,
@@ -26,9 +27,17 @@ import type { SkillLevel } from "@/lib/types";
 
 const JOIN_SKILLS: SkillLevel[] = ["beginner", "learning", "advanced", "teaches"];
 
+// Vordefinierte, respektvolle Kick-Gründe (Konzept §9.3 — kein Freitext-Bashing).
+const REMOVE_REASONS = [
+  "Nicht erschienen",
+  "Passt nicht zur Runde",
+  "Verhalten",
+  "Doppelt eingetragen",
+];
+
 export function BoardView({ searchId }: { searchId: string }) {
   const { data: round, isLoading } = useRound(searchId);
-  const { data: event } = useEvent(round?.event_id ?? "");
+  const { data: event } = useEvent(round?.event_id ?? undefined);
   const { data: session } = useSession();
   const join = useJoinRound(searchId, round?.event_id ?? null);
   const checkIn = useCheckIn(
@@ -38,9 +47,11 @@ export function BoardView({ searchId }: { searchId: string }) {
     event?.title ?? null,
   );
   useRealtimeRound(searchId, round?.event_id ?? null);
+  const host = useHostActions(searchId, round?.event_id ?? null);
 
   const [skill, setSkill] = useState<SkillLevel>("learning");
   const [bringsGame, setBringsGame] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -72,6 +83,9 @@ export function BoardView({ searchId }: { searchId: string }) {
   const confirmed = me?.status === "confirmed";
   const theme = boardTheme(round.game?.theme);
   const subtitle = `${GAME_SOURCE_LABEL[round.game_source]} · sucht ${LEVEL_LABEL[round.desired_level]}`;
+  const isHost = !!userId && round.creator_id === userId;
+  const manageable = round.participants.filter((p) => p.role !== "host");
+  const isClosed = round.status === "closed" || round.status === "cancelled";
 
   function handleJoin() {
     if (!userId || alreadyIn || join.isPending) return;
@@ -165,6 +179,20 @@ export function BoardView({ searchId }: { searchId: string }) {
         </motion.div>
       )}
 
+      {round.status !== "open" && (
+        <div className="flex justify-center">
+          <span className="rounded-full border border-line bg-surface-2 px-3 py-1 text-xs font-black uppercase tracking-wider text-ink-soft">
+            {round.status === "full"
+              ? "Voll besetzt"
+              : round.status === "closed"
+                ? "Runde geschlossen"
+                : round.status === "active"
+                  ? "Läuft"
+                  : "Abgesagt"}
+          </span>
+        </div>
+      )}
+
       <Board
         theme={theme}
         title={round.game?.name ?? "Runde"}
@@ -178,7 +206,7 @@ export function BoardView({ searchId }: { searchId: string }) {
           <Seat
             key={`empty-${i}`}
             onJoin={handleJoin}
-            disabled={!userId || alreadyIn || join.isPending}
+            disabled={!userId || alreadyIn || join.isPending || isClosed}
           />
         ))}
       </Board>
@@ -195,6 +223,96 @@ export function BoardView({ searchId }: { searchId: string }) {
           Lernt gern
         </span>
       </div>
+
+      {isHost && (
+        <section className="rounded-[var(--radius-lg)] border border-line bg-surface p-4 shadow-[0_5px_0_var(--line)]">
+          <p className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-terra">
+            <ShieldCheck className="size-4" /> Tisch verwalten
+          </p>
+
+          {manageable.length === 0 ? (
+            <p className="text-sm font-semibold text-ink-soft">
+              Noch keine Mitspieler beigetreten.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {manageable.map((p) => (
+                <li
+                  key={p.id}
+                  className="rounded-[14px] border border-line bg-surface-2 p-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-1.5 font-display text-sm font-bold text-ink">
+                      {p.profile?.display_name ?? "Gast"}
+                      {p.status === "confirmed" && (
+                        <Check className="size-3.5 text-green-deep" />
+                      )}
+                    </span>
+                    <div className="flex gap-2">
+                      {p.status !== "confirmed" && (
+                        <button
+                          type="button"
+                          onClick={() => host.confirm.mutate(p.user_id)}
+                          disabled={host.confirm.isPending}
+                          className="rounded-[10px] bg-green/15 px-2.5 py-1.5 text-xs font-extrabold text-green-deep"
+                        >
+                          Bestätigen
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setRemoving(removing === p.user_id ? null : p.user_id)
+                        }
+                        className="flex items-center gap-1 rounded-[10px] border border-line bg-surface px-2.5 py-1.5 text-xs font-extrabold text-ink-soft"
+                      >
+                        <X className="size-3.5" /> Entfernen
+                      </button>
+                    </div>
+                  </div>
+                  {removing === p.user_id && (
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
+                      <span className="w-full text-[11px] font-bold text-ink-soft">
+                        Grund (respektvoll, nicht öffentlich):
+                      </span>
+                      {REMOVE_REASONS.map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => {
+                            host.remove.mutate(p.user_id);
+                            setRemoving(null);
+                          }}
+                          className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-bold text-ink"
+                        >
+                          {r}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="mt-3 border-t border-line pt-3">
+            {isClosed ? (
+              <p className="text-sm font-bold text-ink-soft">
+                Runde ist geschlossen.
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={() => host.setStatus.mutate("closed")}
+                disabled={host.setStatus.isPending}
+                className="text-sm font-extrabold text-terra"
+              >
+                Runde schließen
+              </button>
+            )}
+          </div>
+        </section>
+      )}
 
       <DemoBanner />
 

@@ -48,6 +48,18 @@ export async function getRound(
   return data ? toRoundWithGame(data as Record<string, unknown>) : null;
 }
 
+export async function setRoundStatus(
+  supabase: SupabaseClient,
+  searchId: string,
+  status: "open" | "full" | "active" | "closed" | "cancelled",
+): Promise<void> {
+  const { error } = await supabase
+    .from("game_searches")
+    .update({ status })
+    .eq("id", searchId);
+  if (error) throw error;
+}
+
 export interface CreateRoundInput {
   eventId: string;
   gameId: string;

@@ -81,6 +81,27 @@ export interface Game {
   updated_at: string;
 }
 
+export interface Location {
+  id: string;
+  name: string;
+  type: "venue" | "event_host" | "home" | "shop";
+  address_public: string | null;
+  region_label: string | null;
+  geo: Record<string, unknown> | null;
+  socials: Record<string, unknown> | null;
+  website: string | null;
+  owner_id: string | null;
+  claimed_by: string | null;
+  status: "private" | "pending" | "public" | "archived";
+  is_verified: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LocationWithGames extends Location {
+  games: Game[];
+}
+
 export interface Event {
   id: string;
   title: string;

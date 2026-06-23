@@ -1,5 +1,6 @@
 "use client";
 
+import { Stamp } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { TradingCard } from "@/components/TradingCard";
 import { GuestPanel } from "@/components/GuestPanel";
@@ -36,6 +37,24 @@ export function MeView() {
               ? "Tritt einer Runde bei und checke am Tisch ein — deine Signale wachsen aus echten Runden."
               : "Deine Signale wachsen automatisch aus echten Runden (Beitreten, Check-in, Hosten)."}
           </p>
+
+          {trust.stamps.length > 0 && (
+            <section className="mx-auto w-full max-w-[330px] rounded-[var(--radius-lg)] border border-line bg-surface p-4 shadow-[0_5px_0_var(--line)]">
+              <p className="mb-2.5 text-[11px] font-black uppercase tracking-wider text-ink-soft">
+                Event-Stamps
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {trust.stamps.map((s) => (
+                  <span
+                    key={s.id}
+                    className="flex items-center gap-1.5 rounded-full border border-dashed border-gold bg-gold/10 px-3 py-1.5 text-xs font-extrabold text-wood-deep"
+                  >
+                    <Stamp className="size-3.5 text-gold" /> {s.name}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
           <section className="mx-auto w-full max-w-[330px] rounded-[var(--radius-lg)] border border-line bg-surface p-4 shadow-[0_5px_0_var(--line)]">
             <GuestPanel />
           </section>

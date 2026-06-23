@@ -2,11 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Dice5, Minus, Plus } from "lucide-react";
+import { Dice5, MapPin, Minus, Plus } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { GuestPanel } from "@/components/GuestPanel";
 import { useGames } from "@/lib/hooks/useGames";
 import { useCreateRound } from "@/lib/hooks/useRounds";
+import { useEvent } from "@/lib/hooks/useEvents";
+import { useLocationGames } from "@/lib/hooks/useLocations";
 import { useSession } from "@/lib/hooks/useSession";
 import { LEVEL_LABEL } from "@/lib/labels";
 import type { DesiredLevel, Game, GameSource } from "@/lib/types";
@@ -23,7 +25,14 @@ export function CreateRoundWizard({ eventId }: { eventId: string }) {
   const router = useRouter();
   const { data: games } = useGames();
   const { data: session } = useSession();
+  const { data: event } = useEvent(eventId);
+  const { data: onSiteGames } = useLocationGames(event?.location_id);
   const create = useCreateRound(eventId);
+
+  const onSiteIds = useMemo(
+    () => new Set((onSiteGames ?? []).map((g) => g.id)),
+    [onSiteGames],
+  );
 
   const [step, setStep] = useState(1);
   const [query, setQuery] = useState("");
@@ -43,8 +52,30 @@ export function CreateRoundWizard({ eventId }: { eventId: string }) {
   function pickGame(g: Game) {
     setGame(g);
     setSeats(Math.min(g.max_players, 6));
+    setSource(onSiteIds.has(g.id) ? "on_site" : "needed");
     setStep(2);
   }
+
+  const onSiteFiltered = filtered.filter((g) => onSiteIds.has(g.id));
+  const otherFiltered = filtered.filter((g) => !onSiteIds.has(g.id));
+
+  const gameButton = (g: Game, onSite: boolean) => (
+    <button
+      key={g.id}
+      type="button"
+      onClick={() => pickGame(g)}
+      className="flex items-center gap-3 rounded-[14px] border border-line bg-surface p-3 text-left shadow-[0_3px_0_var(--line)] active:translate-y-[2px] active:shadow-none"
+    >
+      <span className="grid size-10 place-items-center rounded-[11px] border border-line bg-surface-2 text-ink-soft">
+        <Dice5 className="size-5" />
+      </span>
+      <b className="font-display text-base text-ink">{g.name}</b>
+      <span className="ml-auto flex items-center gap-1 text-xs font-bold text-ink-soft">
+        {onSite && <MapPin className="size-3.5 text-green-deep" />}
+        {g.min_players}–{g.max_players}
+      </span>
+    </button>
+  );
 
   function submit() {
     if (!game || !hasIdentity) return;
@@ -90,25 +121,27 @@ export function CreateRoundWizard({ eventId }: { eventId: string }) {
             className="w-full rounded-[14px] border border-line bg-surface px-4 py-3 text-base font-semibold text-ink shadow-[0_3px_0_var(--line)] outline-none placeholder:text-ink-soft focus-visible:outline-[3px] focus-visible:outline-gold"
           />
           <div className="mt-3 flex flex-col gap-2">
-            {filtered.map((g) => (
-              <button
-                key={g.id}
-                type="button"
-                onClick={() => pickGame(g)}
-                className="flex items-center gap-3 rounded-[14px] border border-line bg-surface p-3 text-left shadow-[0_3px_0_var(--line)] active:translate-y-[2px] active:shadow-none"
-              >
-                <span className="grid size-10 place-items-center rounded-[11px] border border-line bg-surface-2 text-ink-soft">
-                  <Dice5 className="size-5" />
-                </span>
-                <b className="font-display text-base text-ink">{g.name}</b>
-                <span className="ml-auto text-xs font-bold text-ink-soft">
-                  {g.min_players}–{g.max_players} Spieler
-                </span>
-              </button>
-            ))}
+            {onSiteFiltered.length > 0 && (
+              <>
+                <p className="mt-1 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-green-deep">
+                  <MapPin className="size-3.5" /> Vor Ort verfügbar
+                </p>
+                {onSiteFiltered.map((g) => gameButton(g, true))}
+              </>
+            )}
+            {otherFiltered.length > 0 && (
+              <>
+                <p className="mt-2 text-[11px] font-black uppercase tracking-wider text-ink-soft">
+                  {onSiteFiltered.length > 0
+                    ? "Andere Spiele · mitbringen"
+                    : "Spiele"}
+                </p>
+                {otherFiltered.map((g) => gameButton(g, false))}
+              </>
+            )}
             {filtered.length === 0 && (
               <p className="px-1 text-sm font-semibold text-ink-soft">
-                Kein Treffer. (Neues Spiel anlegen kommt in Schritt 6 / Release 2.)
+                Kein Treffer. (Neues Spiel anlegen kommt in Release 2+.)
               </p>
             )}
           </div>

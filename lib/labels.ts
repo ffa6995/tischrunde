@@ -2,8 +2,21 @@ import type {
   DesiredLevel,
   GameSource,
   GameTheme,
+  Location,
   SkillLevel,
 } from "@/lib/types";
+
+/**
+ * Öffentlich anzeigbare Adresse (Konzept §7.3): genaue Adresse nur für
+ * öffentliche Venues; Heim-/private Orte zeigen nur die grobe Region.
+ * (Verschlüsselung + Edge-Function-Freigabe für bestätigte Teilnehmer: Release 3.)
+ */
+export function locationAddress(loc: Location): string {
+  if (loc.type === "home" || loc.status !== "public") {
+    return loc.region_label ?? "Region wird nur an Teilnehmer freigegeben";
+  }
+  return loc.address_public ?? loc.region_label ?? "";
+}
 
 /** Spielfeld-Theme aus Spielkategorie (data-board in design-tokens.css). */
 export function boardTheme(theme: GameTheme | undefined): string {

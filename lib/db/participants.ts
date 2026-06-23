@@ -35,32 +35,57 @@ export async function joinRound(
     type: "round_joined",
     source_type: "game_search",
     source_id: input.searchId,
-    metadata: { brings_game: input.bringsGame, game_name: input.gameName ?? null },
+    metadata: {
+      brings_game: input.bringsGame,
+      game_name: input.gameName ?? null,
+      skill: input.skillLevel,
+    },
   });
 
+  // Bring-Mechanik (Konzept §11.3): eigenes Signal, wenn jemand mitbringt.
+  if (input.bringsGame) {
+    await supabase.from("activity_events").insert({
+      user_id: input.userId,
+      type: "game_brought",
+      source_type: "game_search",
+      source_id: input.searchId,
+      metadata: { game_name: input.gameName ?? null },
+    });
+  }
+
   return data as Participant;
+}
+
+export interface CheckInInput {
+  searchId: string;
+  userId: string;
+  gameName?: string | null;
+  eventId?: string | null;
+  eventName?: string | null;
 }
 
 /** QR-Check-in (Light): bestätigt Anwesenheit (Konzept §11.4 — das Schwungrad). */
 export async function checkIn(
   supabase: SupabaseClient,
-  searchId: string,
-  userId: string,
-  gameName?: string | null,
+  input: CheckInInput,
 ): Promise<void> {
   const { error } = await supabase
     .from("participants")
     .update({ status: "confirmed" })
-    .eq("search_id", searchId)
-    .eq("user_id", userId);
+    .eq("search_id", input.searchId)
+    .eq("user_id", input.userId);
   if (error) throw error;
 
   await supabase.from("activity_events").insert({
-    user_id: userId,
+    user_id: input.userId,
     type: "checked_in",
     source_type: "game_search",
-    source_id: searchId,
-    metadata: { game_name: gameName ?? null },
+    source_id: input.searchId,
+    metadata: {
+      game_name: input.gameName ?? null,
+      event_id: input.eventId ?? null,
+      event_name: input.eventName ?? null,
+    },
   });
 }
 

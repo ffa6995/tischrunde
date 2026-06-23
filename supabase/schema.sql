@@ -205,3 +205,29 @@ insert into game_searches (event_id, game_id, seats_total, game_source, beginner
   ('22222222-2222-2222-2222-222222222201','11111111-1111-1111-1111-111111111103',5,'on_site',true,'beginner','open','Anfänger willkommen'),
   ('22222222-2222-2222-2222-222222222201','11111111-1111-1111-1111-111111111102',4,'needed',true,'any','open','Wer bringt es mit?')
 on conflict do nothing;
+
+-- ---------- Release 2: Location + Spielbestand ----------
+create policy "location_games read" on location_games for select using (true);
+
+insert into locations (id, name, type, address_public, region_label, website, status, is_verified)
+values (
+  '33333333-3333-3333-3333-333333333301',
+  'Jugendhaus Dornbirn',
+  'event_host',
+  'Jugendhaus, Schulgasse 1, Dornbirn',
+  'Dornbirn',
+  'https://example.org/jugendhaus',
+  'public',
+  true
+)
+on conflict (id) do nothing;
+
+update events set location_id = '33333333-3333-3333-3333-333333333301'
+  where id = '22222222-2222-2222-2222-222222222201';
+
+insert into location_games (location_id, game_id, status) values
+  ('33333333-3333-3333-3333-333333333301','11111111-1111-1111-1111-111111111101','available'),
+  ('33333333-3333-3333-3333-333333333301','11111111-1111-1111-1111-111111111102','available'),
+  ('33333333-3333-3333-3333-333333333301','11111111-1111-1111-1111-111111111103','available'),
+  ('33333333-3333-3333-3333-333333333301','11111111-1111-1111-1111-111111111104','available')
+on conflict do nothing;

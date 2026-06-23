@@ -85,6 +85,7 @@ export function useCheckIn(
   searchId: string,
   eventId: string | null,
   gameName: string | null,
+  eventName: string | null,
 ) {
   const supabase = createClient();
   const qc = useQueryClient();
@@ -98,12 +99,22 @@ export function useCheckIn(
         appendDemoActivity(qc, userId, {
           type: "checked_in",
           sourceId: searchId,
-          metadata: { game_name: gameName },
+          metadata: {
+            game_name: gameName,
+            event_id: eventId,
+            event_name: eventName,
+          },
         });
         markConfirmedInCache(qc, searchId, eventId, userId);
         return;
       }
-      await dbCheckIn(supabase, searchId, userId, gameName);
+      await dbCheckIn(supabase, {
+        searchId,
+        userId,
+        gameName,
+        eventId,
+        eventName,
+      });
     },
     onSuccess: () => {
       const session = qc.getQueryData<SessionState>(["session"]);

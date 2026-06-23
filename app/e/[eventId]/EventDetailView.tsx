@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Camera, Globe, Plus } from "lucide-react";
+import { Camera, Globe, MapPin, Plus } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { RoundRow } from "@/components/RoundRow";
 import { ShareButton } from "@/components/ShareButton";
@@ -9,11 +9,14 @@ import { QRCodeBlock } from "@/components/QRCodeBlock";
 import { DemoBanner } from "@/components/DemoBanner";
 import { useEvent } from "@/lib/hooks/useEvents";
 import { useRounds } from "@/lib/hooks/useRounds";
-import { formatEventDate } from "@/lib/labels";
+import { useLocation, useLocationGames } from "@/lib/hooks/useLocations";
+import { formatEventDate, locationAddress } from "@/lib/labels";
 
 export function EventDetailView({ eventId }: { eventId: string }) {
   const { data: event, isLoading: eventLoading } = useEvent(eventId);
   const { data: rounds, isLoading: roundsLoading } = useRounds(eventId);
+  const { data: location } = useLocation(event?.location_id);
+  const { data: locationGames } = useLocationGames(event?.location_id);
 
   if (eventLoading) {
     return (
@@ -79,6 +82,46 @@ export function EventDetailView({ eventId }: { eventId: string }) {
           <ShareButton url={`/e/${event.id}`} title={event.title} />
         </div>
       </section>
+
+      {location && (
+        <section className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-line bg-surface p-4 shadow-[0_5px_0_var(--line)]">
+          <div className="flex items-start gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-surface-2 text-ink-soft">
+              <MapPin className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="font-display text-base font-bold text-ink">
+                {location.name}
+                {location.is_verified && (
+                  <span className="ml-2 align-middle text-[10px] font-extrabold uppercase tracking-wider text-trust-verified">
+                    verifiziert
+                  </span>
+                )}
+              </p>
+              <p className="text-sm font-semibold text-ink-soft">
+                {locationAddress(location)}
+              </p>
+            </div>
+          </div>
+          {locationGames && locationGames.length > 0 && (
+            <div>
+              <p className="mb-1.5 text-[11px] font-black uppercase tracking-wider text-ink-soft">
+                Vor Ort verfügbar
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {locationGames.map((g) => (
+                  <span
+                    key={g.id}
+                    className="rounded-full border border-line bg-surface-2 px-2.5 py-1 text-xs font-bold text-ink"
+                  >
+                    {g.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       <DemoBanner />
 

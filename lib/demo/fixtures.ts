@@ -4,16 +4,40 @@
  * ergänzt illustrative Teilnehmer, damit das Spielfeld gefüllt wirkt.
  * Wird nur genutzt, solange isSupabaseConfigured() === false.
  */
-import type { Event, Game, RoundWithGame, ParticipantWithProfile } from "@/lib/types";
+import type {
+  Event,
+  Game,
+  Location,
+  LocationWithGames,
+  RoundWithGame,
+  ParticipantWithProfile,
+} from "@/lib/types";
 
 const T = "2026-06-21T12:00:00.000Z";
+
+export const DEMO_LOCATION: Location = {
+  id: "33333333-3333-3333-3333-333333333301",
+  name: "Jugendhaus Dornbirn",
+  type: "event_host",
+  address_public: "Jugendhaus, Schulgasse 1, Dornbirn",
+  region_label: "Dornbirn",
+  geo: null,
+  socials: null,
+  website: "https://example.org/jugendhaus",
+  owner_id: null,
+  claimed_by: null,
+  status: "public",
+  is_verified: true,
+  created_at: T,
+  updated_at: T,
+};
 
 export const DEMO_EVENT: Event = {
   id: "22222222-2222-2222-2222-222222222201",
   title: "Spielerei Dornbirn",
   starts_at: "2026-06-28T12:00:00.000Z",
   ends_at: "2026-06-28T16:00:00.000Z",
-  location_id: null,
+  location_id: DEMO_LOCATION.id,
   description:
     "Offener Brett- & Kartenspiel-Nachmittag im Jugendhaus, Dornbirn. Komm vorbei — alle Einnahmen gehen an die Pfadfinder.",
   host_id: null,
@@ -79,6 +103,30 @@ function part(
 }
 
 const GAME_BY_ID = Object.fromEntries(DEMO_GAMES.map((g) => [g.id, g]));
+
+// Spielbestand der Location (welche der DEMO_GAMES dort vor Ort sind).
+const DEMO_LOCATION_GAME_IDS = [
+  "11111111-1111-1111-1111-111111111101", // Catan
+  "11111111-1111-1111-1111-111111111102", // Carcassonne
+  "11111111-1111-1111-1111-111111111103", // Wingspan
+  "11111111-1111-1111-1111-111111111104", // Azul
+];
+
+export function demoLocation(id: string): Location | null {
+  return id === DEMO_LOCATION.id ? DEMO_LOCATION : null;
+}
+
+export function demoLocationWithGames(id: string): LocationWithGames | null {
+  if (id !== DEMO_LOCATION.id) return null;
+  return {
+    ...DEMO_LOCATION,
+    games: DEMO_LOCATION_GAME_IDS.map((gid) => GAME_BY_ID[gid]).filter(Boolean),
+  };
+}
+
+export function demoLocationGames(id: string): Game[] {
+  return demoLocationWithGames(id)?.games ?? [];
+}
 
 function round(
   id: string,

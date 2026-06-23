@@ -12,6 +12,7 @@ import { GuestPanel } from "@/components/GuestPanel";
 import { DemoBanner } from "@/components/DemoBanner";
 import { useRound, useJoinRound } from "@/lib/hooks/useRounds";
 import { useCheckIn } from "@/lib/hooks/useActivity";
+import { useEvent } from "@/lib/hooks/useEvents";
 import { useSession } from "@/lib/hooks/useSession";
 import {
   boardTheme,
@@ -26,12 +27,14 @@ const JOIN_SKILLS: SkillLevel[] = ["beginner", "learning", "advanced", "teaches"
 
 export function BoardView({ searchId }: { searchId: string }) {
   const { data: round, isLoading } = useRound(searchId);
+  const { data: event } = useEvent(round?.event_id ?? "");
   const { data: session } = useSession();
   const join = useJoinRound(searchId, round?.event_id ?? null);
   const checkIn = useCheckIn(
     searchId,
     round?.event_id ?? null,
     round?.game?.name ?? null,
+    event?.title ?? null,
   );
 
   const [skill, setSkill] = useState<SkillLevel>("learning");

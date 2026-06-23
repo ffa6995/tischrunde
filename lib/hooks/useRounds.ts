@@ -183,8 +183,19 @@ function applyDemoJoin(
   appendDemoActivity(qc, userId, {
     type: "round_joined",
     sourceId: searchId,
-    metadata: { brings_game: form.bringsGame, game_name: form.gameName ?? null },
+    metadata: {
+      brings_game: form.bringsGame,
+      game_name: form.gameName ?? null,
+      skill: form.skillLevel,
+    },
   });
+  if (form.bringsGame) {
+    appendDemoActivity(qc, userId, {
+      type: "game_brought",
+      sourceId: searchId,
+      metadata: { game_name: form.gameName ?? null },
+    });
+  }
 }
 
 export function useJoinRound(searchId: string, eventId: string | null) {

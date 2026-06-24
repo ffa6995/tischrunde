@@ -298,3 +298,14 @@ drop trigger if exists trg_participants_status on participants;
 create trigger trg_participants_status
   after insert or update or delete on participants
   for each row execute function tr_update_search_status();
+
+-- ---------- Admin-Basis: role admin/moderator darf Events & Locations verwalten (§14.3) ----------
+drop policy if exists "events admin all" on events;
+create policy "events admin all" on events for all
+  using (exists (select 1 from profiles p where p.id = auth.uid() and p.role in ('admin','moderator')))
+  with check (exists (select 1 from profiles p where p.id = auth.uid() and p.role in ('admin','moderator')));
+
+drop policy if exists "locations admin all" on locations;
+create policy "locations admin all" on locations for all
+  using (exists (select 1 from profiles p where p.id = auth.uid() and p.role in ('admin','moderator')))
+  with check (exists (select 1 from profiles p where p.id = auth.uid() and p.role in ('admin','moderator')));

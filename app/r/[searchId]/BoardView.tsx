@@ -10,7 +10,7 @@ import { ShareButton } from "@/components/ShareButton";
 import { QRCodeBlock } from "@/components/QRCodeBlock";
 import { GuestPanel } from "@/components/GuestPanel";
 import { DemoBanner } from "@/components/DemoBanner";
-import { useRound, useJoinRound } from "@/lib/hooks/useRounds";
+import { useRound, useJoinRound, useLeaveRound } from "@/lib/hooks/useRounds";
 import { useCheckIn } from "@/lib/hooks/useActivity";
 import { useEvent } from "@/lib/hooks/useEvents";
 import { useRealtimeRound } from "@/lib/hooks/useRealtimeRound";
@@ -48,6 +48,7 @@ export function BoardView({ searchId }: { searchId: string }) {
   );
   useRealtimeRound(searchId, round?.event_id ?? null);
   const host = useHostActions(searchId, round?.event_id ?? null);
+  const leave = useLeaveRound(searchId, round?.event_id ?? null);
 
   const [skill, setSkill] = useState<SkillLevel>("learning");
   const [bringsGame, setBringsGame] = useState(false);
@@ -175,6 +176,16 @@ export function BoardView({ searchId }: { searchId: string }) {
                 {checkIn.isPending ? "Check-in…" : "Ich bin da — Check-in"}
               </button>
             </>
+          )}
+          {!isHost && (
+            <button
+              type="button"
+              onClick={() => leave.mutate()}
+              disabled={leave.isPending}
+              className="self-start text-xs font-bold text-ink-soft underline underline-offset-2"
+            >
+              {leave.isPending ? "…" : "Runde verlassen"}
+            </button>
           )}
         </motion.div>
       )}

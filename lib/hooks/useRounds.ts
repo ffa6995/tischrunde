@@ -9,7 +9,10 @@ import {
   getRound,
   getRoundsForEvent,
 } from "@/lib/db/rounds";
-import { joinRound as dbJoinRound } from "@/lib/db/participants";
+import {
+  joinRound as dbJoinRound,
+  leaveRound as dbLeaveRound,
+} from "@/lib/db/participants";
 import {
   DEMO_GAMES,
   demoRound,
@@ -225,6 +228,43 @@ export function useJoinRound(searchId: string, eventId: string | null) {
         qc.invalidateQueries({ queryKey: ["round", searchId] });
         if (eventId) qc.invalidateQueries({ queryKey: ["rounds", eventId] });
         qc.invalidateQueries({ queryKey: ["activity", session?.user?.id] });
+      }
+    },
+  });
+}
+
+export function useLeaveRound(searchId: string, eventId: string | null) {
+  const supabase = createClient();
+  const qc = useQueryClient();
+  return useMutation<void, Error, void>({
+    mutationFn: async () => {
+      const session = qc.getQueryData<SessionState>(["session"]);
+      const userId = session?.user?.id;
+      if (!userId) return;
+
+      if (!isSupabaseConfigured()) {
+        const drop = (r: RoundWithGame): RoundWithGame => {
+          const participants = r.participants.filter(
+            (p) => p.user_id !== userId,
+          );
+          return { ...r, participants, seats_taken: participants.length };
+        };
+        qc.setQueryData<RoundWithGame | null>(["round", searchId], (r) =>
+          r ? drop(r) : r,
+        );
+        if (eventId) {
+          qc.setQueryData<RoundWithGame[]>(["rounds", eventId], (list) =>
+            list?.map((r) => (r.id === searchId ? drop(r) : r)),
+          );
+        }
+        return;
+      }
+      await dbLeaveRound(supabase, searchId, userId);
+    },
+    onSuccess: () => {
+      if (isSupabaseConfigured()) {
+        qc.invalidateQueries({ queryKey: ["round", searchId] });
+        if (eventId) qc.invalidateQueries({ queryKey: ["rounds", eventId] });
       }
     },
   });

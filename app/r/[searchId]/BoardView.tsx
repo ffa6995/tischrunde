@@ -296,10 +296,17 @@ export function BoardView({ searchId }: { searchId: string }) {
           )}
 
           <div className="mt-3 border-t border-line pt-3">
-            {isClosed ? (
-              <p className="text-sm font-bold text-ink-soft">
-                Runde ist geschlossen.
-              </p>
+            {round.status === "closed" ? (
+              <button
+                type="button"
+                onClick={() => host.setStatus.mutate("open")}
+                disabled={host.setStatus.isPending}
+                className="text-sm font-extrabold text-green-deep"
+              >
+                Runde wieder öffnen
+              </button>
+            ) : round.status === "cancelled" ? (
+              <p className="text-sm font-bold text-ink-soft">Runde abgesagt.</p>
             ) : (
               <button
                 type="button"

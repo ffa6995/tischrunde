@@ -49,6 +49,12 @@ export function CreateRoundWizard({ eventId }: { eventId: string }) {
     return (games ?? []).filter((g) => g.name.toLowerCase().includes(q));
   }, [games, query]);
 
+  // "Liegt vor Ort" nur, wenn das gewählte Spiel im Location-Bestand ist.
+  const gameOnSite = !!game && onSiteIds.has(game.id);
+  const availableSources = gameOnSite
+    ? SOURCES
+    : SOURCES.filter((s) => s.value !== "on_site");
+
   function pickGame(g: Game) {
     setGame(g);
     setSeats(Math.min(g.max_players, 6));
@@ -193,7 +199,7 @@ export function CreateRoundWizard({ eventId }: { eventId: string }) {
               Spiel vorhanden?
             </p>
             <div className="flex flex-wrap gap-2">
-              {SOURCES.map((s) => (
+              {availableSources.map((s) => (
                 <button
                   key={s.value}
                   type="button"

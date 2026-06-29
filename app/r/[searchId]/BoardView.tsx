@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Info, QrCode, ShieldCheck, X } from "lucide-react";
+import { AlertTriangle, Check, Info, QrCode, ShieldCheck, X } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { Board } from "@/components/Board";
 import { Seat } from "@/components/Seat";
@@ -16,6 +16,7 @@ import { useEvent } from "@/lib/hooks/useEvents";
 import { useRealtimeRound } from "@/lib/hooks/useRealtimeRound";
 import { useHostActions } from "@/lib/hooks/useHostActions";
 import { useSession } from "@/lib/hooks/useSession";
+import { isGameAvailable } from "@/lib/availability";
 import {
   boardTheme,
   GAME_SOURCE_LABEL,
@@ -54,6 +55,7 @@ export function BoardView({ searchId }: { searchId: string }) {
   const [bringsGame, setBringsGame] = useState(false);
   const [bringsNote, setBringsNote] = useState("");
   const [removing, setRemoving] = useState<string | null>(null);
+  const [closeWarn, setCloseWarn] = useState(false);
 
   if (isLoading) {
     return (
@@ -89,6 +91,16 @@ export function BoardView({ searchId }: { searchId: string }) {
   const manageable = round.participants.filter((p) => p.role !== "host");
   const isClosed = round.status === "closed" || round.status === "cancelled";
   const onSiteGame = round.game_source === "on_site";
+  const otherBringer = round.participants.find(
+    (p) => p.brings_game && p.user_id !== userId,
+  );
+  const bringRedundant = onSiteGame || !!otherBringer;
+  const gameAvailable = isGameAvailable(round.game_source, round.participants);
+  const bringHint = onSiteGame
+    ? "Liegt eigentlich vor Ort — nur nötig, wenn du z. B. Erweiterungen mitbringst."
+    : otherBringer
+      ? `${otherBringer.profile?.display_name ?? "Jemand"} bringt das Spiel schon mit — nur nötig, wenn du z. B. Erweiterungen dabei hast.`
+      : null;
 
   function handleJoin() {
     if (!userId || alreadyIn || join.isPending) return;
@@ -148,11 +160,11 @@ export function BoardView({ searchId }: { searchId: string }) {
                 className="size-5 accent-[var(--green)]"
               />
               Ich bringe das Spiel mit
-              {onSiteGame && (
+              {bringRedundant && bringHint && (
                 <span
-                  title="Das Spiel liegt schon vor Ort — du musst es nicht mitbringen (außer du hast z. B. Erweiterungen dabei)."
+                  title={bringHint}
                   className="inline-flex cursor-help text-ink-soft"
-                  aria-label="Liegt schon vor Ort"
+                  aria-label="Hinweis zum Mitbringen"
                 >
                   <Info className="size-4" />
                 </span>
@@ -160,11 +172,10 @@ export function BoardView({ searchId }: { searchId: string }) {
             </label>
             {bringsGame && (
               <div className="mt-2 flex flex-col gap-1.5">
-                {onSiteGame && (
+                {bringHint && (
                   <p className="flex items-start gap-1.5 text-xs font-semibold text-ink-soft">
                     <Info className="mt-0.5 size-3.5 shrink-0" />
-                    Liegt eigentlich vor Ort — nur nötig, wenn du z. B.
-                    Erweiterungen mitbringst.
+                    {bringHint}
                   </p>
                 )}
                 <input
@@ -233,6 +244,20 @@ export function BoardView({ searchId }: { searchId: string }) {
                   ? "Läuft"
                   : "Abgesagt"}
           </span>
+        </div>
+      )}
+
+      {!gameAvailable && (
+        <div
+          role="status"
+          className="flex items-start gap-2.5 rounded-[14px] border border-gold bg-gold/10 px-4 py-3"
+        >
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--warning-soft)]" />
+          <p className="text-sm font-bold text-ink">
+            Noch kein Spiel gesichert — niemand bringt{" "}
+            {round.game?.name ?? "das Spiel"} mit. Wähle „Ich bringe das Spiel
+            mit", wenn du es dabei hast.
+          </p>
         </div>
       )}
 
@@ -351,14 +376,31 @@ export function BoardView({ searchId }: { searchId: string }) {
             ) : round.status === "cancelled" ? (
               <p className="text-sm font-bold text-ink-soft">Runde abgesagt.</p>
             ) : (
-              <button
-                type="button"
-                onClick={() => host.setStatus.mutate("closed")}
-                disabled={host.setStatus.isPending}
-                className="text-sm font-extrabold text-terra"
-              >
-                Runde schließen
-              </button>
+              <div className="flex flex-col gap-2">
+                {closeWarn && !gameAvailable && (
+                  <p className="flex items-start gap-1.5 text-sm font-semibold text-terra">
+                    <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                    Kein Spiel gesichert — liegt nicht vor Ort und niemand bringt
+                    es mit. Trotzdem schließen?
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!gameAvailable && !closeWarn) {
+                      setCloseWarn(true);
+                      return;
+                    }
+                    host.setStatus.mutate("closed");
+                  }}
+                  disabled={host.setStatus.isPending}
+                  className="self-start text-sm font-extrabold text-terra"
+                >
+                  {!gameAvailable && closeWarn
+                    ? "Trotzdem schließen"
+                    : "Runde schließen"}
+                </button>
+              </div>
             )}
           </div>
         </section>

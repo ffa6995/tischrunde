@@ -66,7 +66,7 @@ export function Seat({
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: "spring", stiffness: 520, damping: 28 }}
       role="group"
-      aria-label={`${name}${isHost ? ", Host" : ""}, ${SKILL_LABEL[skill]}${participant.brings_game ? ", bringt das Spiel mit" : ""}, ${checkedIn ? "eingecheckt" : "Platz belegt"}`}
+      aria-label={`${name}${isHost ? ", Host" : ""}, ${SKILL_LABEL[skill]}${participant.brings_game ? `, bringt das Spiel mit${participant.brings_note ? ` (${participant.brings_note})` : ""}` : ""}, ${checkedIn ? "eingecheckt" : "Platz belegt"}`}
       className={`relative flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-[16px] border bg-surface p-3 shadow-[0_4px_0_var(--line)] ${
         isYou
           ? "border-gold shadow-[0_4px_0_var(--gold)] ring-[3px] ring-gold/35"
@@ -98,7 +98,10 @@ export function Seat({
       {participant.brings_game && (
         <span
           aria-hidden
-          className="flex items-center gap-1 text-[9.5px] font-black uppercase tracking-wide text-wood-deep"
+          title={participant.brings_note ?? undefined}
+          className={`flex items-center gap-1 text-[9.5px] font-black uppercase tracking-wide text-wood-deep ${
+            participant.brings_note ? "cursor-help underline decoration-dotted underline-offset-2" : ""
+          }`}
         >
           <Backpack className="size-3" /> bringt mit
         </span>

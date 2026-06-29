@@ -97,6 +97,7 @@ function part(
     role,
     skill_level: skill,
     brings_game: false,
+    brings_note: null,
     status: "joined",
     profile: { id, display_name: name, avatar_url: null },
   };

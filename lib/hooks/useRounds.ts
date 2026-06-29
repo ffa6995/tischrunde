@@ -80,6 +80,7 @@ export function useCreateRound(eventId: string) {
           role: "host",
           skill_level: "any",
           brings_game: form.gameSource === "host_brings",
+          brings_note: null,
           status: "joined",
           profile: {
             id: creatorId,
@@ -142,6 +143,7 @@ export function useCreateRound(eventId: string) {
 export interface JoinForm {
   skillLevel: SkillLevel;
   bringsGame: boolean;
+  bringsNote?: string | null;
   gameName?: string | null;
 }
 
@@ -161,6 +163,7 @@ function applyDemoJoin(
     role: "player",
     skill_level: form.skillLevel,
     brings_game: form.bringsGame,
+    brings_note: form.bringsGame ? (form.bringsNote ?? null) : null,
     status: "joined",
     profile: {
       id: userId,
@@ -219,6 +222,7 @@ export function useJoinRound(searchId: string, eventId: string | null) {
         userId,
         skillLevel: form.skillLevel,
         bringsGame: form.bringsGame,
+        bringsNote: form.bringsNote ?? null,
         gameName: form.gameName ?? null,
       });
     },

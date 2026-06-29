@@ -103,6 +103,7 @@ create table if not exists participants (
   role          text not null default 'player',    -- host|player
   skill_level   text not null default 'any',       -- beginner|advanced|learning|teaches|any
   brings_game   boolean not null default false,
+  brings_note   text,                               -- optionale Notiz (z. B. Erweiterung)
   status        text not null default 'joined',    -- requested|joined|confirmed|removed|left|no_show
   unique (search_id, user_id)
 );

@@ -144,6 +144,7 @@ export interface Participant {
   role: "host" | "player";
   skill_level: SkillLevel;
   brings_game: boolean;
+  brings_note: string | null;
   status: ParticipantStatus;
 }
 

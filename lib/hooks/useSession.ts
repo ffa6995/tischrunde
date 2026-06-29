@@ -4,7 +4,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getProfile } from "@/lib/db/profiles";
-import { requestEmailClaim, signInAsGuest, signOut } from "@/lib/db/auth";
+import {
+  requestEmailClaim,
+  signInAsGuest,
+  signInWithEmail,
+  signOut,
+} from "@/lib/db/auth";
 import type { Profile } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 
@@ -84,6 +89,20 @@ export function useClaimProfile() {
         );
       }
       await requestEmailClaim(supabase, email);
+    },
+  });
+}
+
+export function useSignInWithEmail() {
+  const supabase = createClient();
+  return useMutation({
+    mutationFn: async (email: string) => {
+      if (!isSupabaseConfigured()) {
+        throw new Error(
+          "Anmelden braucht eine echte Supabase-Verbindung (kein Demo-Modus).",
+        );
+      }
+      await signInWithEmail(supabase, email);
     },
   });
 }

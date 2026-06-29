@@ -22,6 +22,20 @@ export async function signInAsGuest(
   return upsertProfile(supabase, userId, name);
 }
 
+/**
+ * Anmeldung für bestehende (oder neue) Accounts per Magic-Link (Konzept §8.2).
+ * Schickt einen Login-Link; nach dem Klick (→ /auth/confirm) ist man eingeloggt.
+ */
+export async function signInWithEmail(
+  supabase: SupabaseClient,
+  email: string,
+): Promise<void> {
+  const e = email.trim();
+  if (!e) throw new Error("Bitte eine E-Mail-Adresse eingeben.");
+  const { error } = await supabase.auth.signInWithOtp({ email: e });
+  if (error) throw error;
+}
+
 export async function signOut(supabase: SupabaseClient): Promise<void> {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;

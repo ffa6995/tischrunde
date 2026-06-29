@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, QrCode, ShieldCheck, X } from "lucide-react";
+import { Check, Info, QrCode, ShieldCheck, X } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { Board } from "@/components/Board";
 import { Seat } from "@/components/Seat";
@@ -52,6 +52,7 @@ export function BoardView({ searchId }: { searchId: string }) {
 
   const [skill, setSkill] = useState<SkillLevel>("learning");
   const [bringsGame, setBringsGame] = useState(false);
+  const [bringsNote, setBringsNote] = useState("");
   const [removing, setRemoving] = useState<string | null>(null);
 
   if (isLoading) {
@@ -87,12 +88,14 @@ export function BoardView({ searchId }: { searchId: string }) {
   const isHost = !!userId && round.creator_id === userId;
   const manageable = round.participants.filter((p) => p.role !== "host");
   const isClosed = round.status === "closed" || round.status === "cancelled";
+  const onSiteGame = round.game_source === "on_site";
 
   function handleJoin() {
     if (!userId || alreadyIn || join.isPending) return;
     join.mutate({
       skillLevel: skill,
       bringsGame,
+      bringsNote: bringsGame ? bringsNote.trim() || null : null,
       gameName: round?.game?.name ?? null,
     });
   }
@@ -136,15 +139,44 @@ export function BoardView({ searchId }: { searchId: string }) {
               </button>
             ))}
           </div>
-          <label className="mt-3 flex items-center gap-2.5 text-sm font-bold text-ink">
-            <input
-              type="checkbox"
-              checked={bringsGame}
-              onChange={(e) => setBringsGame(e.target.checked)}
-              className="size-5 accent-[var(--green)]"
-            />
-            Ich bringe das Spiel mit
-          </label>
+          <div className="mt-3">
+            <label className="flex items-center gap-2.5 text-sm font-bold text-ink">
+              <input
+                type="checkbox"
+                checked={bringsGame}
+                onChange={(e) => setBringsGame(e.target.checked)}
+                className="size-5 accent-[var(--green)]"
+              />
+              Ich bringe das Spiel mit
+              {onSiteGame && (
+                <span
+                  title="Das Spiel liegt schon vor Ort — du musst es nicht mitbringen (außer du hast z. B. Erweiterungen dabei)."
+                  className="inline-flex cursor-help text-ink-soft"
+                  aria-label="Liegt schon vor Ort"
+                >
+                  <Info className="size-4" />
+                </span>
+              )}
+            </label>
+            {bringsGame && (
+              <div className="mt-2 flex flex-col gap-1.5">
+                {onSiteGame && (
+                  <p className="flex items-start gap-1.5 text-xs font-semibold text-ink-soft">
+                    <Info className="mt-0.5 size-3.5 shrink-0" />
+                    Liegt eigentlich vor Ort — nur nötig, wenn du z. B.
+                    Erweiterungen mitbringst.
+                  </p>
+                )}
+                <input
+                  value={bringsNote}
+                  onChange={(e) => setBringsNote(e.target.value)}
+                  placeholder="Notiz (optional) — z. B. Erweiterung Seefahrer"
+                  aria-label="Notiz zum Mitbringen"
+                  className="w-full rounded-[12px] border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink outline-none placeholder:text-ink-soft focus-visible:outline-[3px] focus-visible:outline-gold"
+                />
+              </div>
+            )}
+          </div>
         </section>
       )}
 

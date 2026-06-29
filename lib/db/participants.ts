@@ -6,6 +6,7 @@ export interface JoinRoundInput {
   userId: string;
   skillLevel: SkillLevel;
   bringsGame: boolean;
+  bringsNote?: string | null;
   gameName?: string | null;
 }
 
@@ -21,6 +22,7 @@ export async function joinRound(
         user_id: input.userId,
         skill_level: input.skillLevel,
         brings_game: input.bringsGame,
+        brings_note: input.bringsGame ? (input.bringsNote ?? null) : null,
         role: "player",
         status: "joined",
       },
@@ -49,7 +51,7 @@ export async function joinRound(
       type: "game_brought",
       source_type: "game_search",
       source_id: input.searchId,
-      metadata: { game_name: input.gameName ?? null },
+      metadata: { game_name: input.gameName ?? null, note: input.bringsNote ?? null },
     });
   }
 

@@ -3,6 +3,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { BottomNav } from "@/components/BottomNav";
 import { Sidebar } from "@/components/Sidebar";
+import { PWARegister } from "@/components/PWARegister";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -72,6 +74,8 @@ export default function RootLayout({
               </div>
             </div>
           </div>
+          <PWARegister />
+          <InstallPrompt />
         </Providers>
       </body>
     </html>

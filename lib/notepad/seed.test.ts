@@ -1,8 +1,17 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { parseDefinition } from "./registry";
+import { BLOCK_MODULES, parseDefinition } from "./registry";
+import type { BlockType } from "./schema";
 
 const sql = readFileSync("supabase/migrations/20260906010000_notepad.sql", "utf8");
+
+/** Rohe (ungeparste) Block-Form, wie sie direkt aus dem JSON-Seed kommt. */
+interface RawBlock {
+  id: string;
+  type: string;
+  title?: string;
+  config?: Record<string, unknown>;
+}
 
 /**
  * Zieht Template-Id und '{...}'::jsonb-Definition aus jeder Seed-Zeile.
@@ -13,7 +22,7 @@ const sql = readFileSync("supabase/migrations/20260906010000_notepad.sql", "utf8
  * `('<vier feste Ids ...440[1-4]>', ... , '{"schemaVersion":...}'::jsonb)`;
  * ändert sich dort das Format, muss dieser Test mitgepflegt werden.
  */
-function seededRows(): Array<{ id: string; definition: unknown }> {
+function seededRows(): Array<{ id: string; definition: { blocks: RawBlock[] } }> {
   const pattern =
     /\('(44444444-4444-4444-4444-44444444440[1-4])',[\s\S]*?'(\{"schemaVersion".*?\})'::jsonb\)/g;
   return [...sql.matchAll(pattern)].map((m) => ({ id: m[1], definition: JSON.parse(m[2]) }));
@@ -88,5 +97,45 @@ describe("seeded system templates", () => {
       step: 1,
       allowNegative: false,
     });
+  });
+});
+
+describe("seeded config keys match the block catalogue (raw, pre-parse)", () => {
+  /**
+   * `parseConfig()` ist bewusst defensiv: ein unbekannter/verschriebener Key
+   * im rohen Config-Objekt wird stillschweigend verworfen und fällt auf den
+   * Default des jeweiligen Blocks zurück (siehe `lib/notepad/blocks/*.ts`).
+   * Deshalb kann keine Werte-Prüfung nach dem Parsen einen Tippfehler in einem
+   * Feld entdecken, dessen Seed-Wert zufällig dem Default entspricht — genau
+   * das ist heute bei allen vier `round_table`-Werten der Runden-Zettel- und
+   * beiden `tally`-Werten der Strichliste-Vorlage der Fall. Diese Prüfung
+   * arbeitet daher auf dem rohen JSON, VOR dem Parsen, und vergleicht
+   * Schlüsselnamen statt Werten.
+   *
+   * Bewusst als TEILMENGE geprüft (jeder vorhandene Key muss bekannt sein),
+   * NICHT als exakte Gleichheit: Ein im Seed fehlender Key ist legitim (dann
+   * greift der Default des Blocks), aber ein unbekannter Key im Seed ist
+   * immer ein Fehler (Tippfehler oder ein Feld, das es nie gab) und muss
+   * hier auffallen, unabhängig davon, ob sein Wert zufällig dem Default
+   * entspricht.
+   */
+  it("every seeded block uses a known type and only known config keys", () => {
+    for (const { id, definition } of seededRows()) {
+      for (const block of definition.blocks) {
+        const label = `template …${id.slice(-4)}, block "${block.id}"`;
+
+        expect(Object.keys(BLOCK_MODULES), `${label}: unknown block type "${block.type}"`).toContain(
+          block.type,
+        );
+
+        const mod = BLOCK_MODULES[block.type as BlockType];
+        if (!mod) continue; // already failed above; avoid a confusing follow-on error
+
+        const expectedKeys = Object.keys(mod.defaultConfig);
+        const actualKeys = Object.keys(block.config ?? {});
+        const unknownKeys = actualKeys.filter((key) => !expectedKeys.includes(key));
+        expect(unknownKeys, `${label} (${block.type}): unrecognized config key(s)`).toEqual([]);
+      }
+    }
   });
 });

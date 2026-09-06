@@ -182,3 +182,36 @@ export interface RoundWithGame extends GameSearch {
   participants: ParticipantWithProfile[];
   seats_taken: number;
 }
+
+export type NotepadTemplateKind = "system" | "user";
+export type NotepadSheetStatus = "active" | "finished";
+
+export interface NotepadTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  kind: NotepadTemplateKind;
+  owner_id: string | null;
+  game_id: string | null;
+  origin_template_id: string | null;
+  schema_version: number;
+  definition: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotepadSheet {
+  id: string;
+  title: string | null;
+  search_id: string | null;
+  owner_id: string;
+  template_id: string | null;
+  schema_version: number;
+  definition: Record<string, unknown>;
+  players: Array<{ id: string; label: string; participant_id?: string | null }>;
+  entries: Record<string, unknown>;
+  revision: number;
+  status: NotepadSheetStatus;
+  created_at: string;
+  updated_at: string;
+}

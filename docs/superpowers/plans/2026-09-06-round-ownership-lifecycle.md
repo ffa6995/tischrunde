@@ -77,13 +77,13 @@
 
 **Files:** repository-wide verification only; no additional scope changes
 
-- [ ] Run `npm test -- --run`, `npm run lint`, and `npm run build` (or the exact package scripts present in `package.json`).
-- [ ] Run `git diff --check` and inspect `git status` for unintended files or secrets.
-- [ ] Apply the new migration to the configured Supabase project and execute the structural verification queries for the archive column, RPC, policies, and grants.
-- [ ] Commit the migration, schema, client, UI, and test changes with a focused message; push to `origin/main`.
-- [ ] Confirm the Vercel deployment from `origin/main` succeeds and that production uses the expected public Supabase URL and publishable key.
-- [ ] Perform live acceptance with two guest identities: create a round, join as guest, close it as host, archive it as host, confirm it disappears from the event list, confirm the host direct link remains readable, confirm a non-host cannot archive, and confirm a removed participant cannot rejoin.
-- [ ] Record the verification commands and live acceptance result in the final response.
+- [x] Run `npx vitest run`, `npx eslint .`, and `npm run build` (repo has no `npm test`/`npm run lint` scripts; used the underlying tools directly).
+- [x] Run `git status` / staged diff review before committing; no secrets or unintended files included (`.superpowers/`, `supabase/.temp/`, and a stray `pnpm-workspace.yaml` left untracked, out of scope).
+- [x] Applied the new migration block to the configured Supabase project (user ran it directly in the SQL editor) and confirmed structurally via a live Node script exercising `archive_round`, the tightened RLS, and the hardened `join_round`.
+- [x] Committed (`2b0efc6`, "Add round archiving lifecycle for closed rounds") and pushed to `origin/main`.
+- [x] Confirmed the Vercel production deployment (`https://tischrunde.vercel.app`, alias of `dpl_GgSe966vffKZNQuwyGUyfbrEPHoi`) built and went `Ready` ~4 minutes after the push.
+- [x] Live acceptance performed with two real anonymous Supabase identities via a throwaway script (not committed) hitting the live project directly: create → join → remove → rejoin-rejected → close → non-host-archive-rejected → archive → double-archive-rejected → archived-join-rejected → hidden from anon/non-creator select → excluded from the event's non-archived list → still visible to the creator with `archived_at` set. All 19 assertions passed. Also confirmed visually in the production UI that the test round does not appear among the event's "Offene Runden".
+- [x] See this response for the verification commands and live acceptance result.
 
 ## Execution Notes
 

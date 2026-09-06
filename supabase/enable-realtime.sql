@@ -18,4 +18,11 @@ begin
   ) then
     alter publication supabase_realtime add table game_searches;
   end if;
+
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'notepad_sheets'
+  ) then
+    alter publication supabase_realtime add table notepad_sheets;
+  end if;
 end $$;

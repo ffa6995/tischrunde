@@ -79,3 +79,226 @@ create policy "notepad sheets read accessible" on notepad_sheets for select usin
 
 -- Schreiben ausschliesslich über die RPCs (Task 7).
 revoke insert, update, delete on notepad_templates, notepad_sheets from anon, authenticated;
+
+-- ============================================================
+-- RPCs (einziger Schreibweg aus dem Browser)
+-- ============================================================
+
+create or replace function public.create_notepad_sheet(
+  p_search_id uuid,
+  p_template_id uuid,
+  p_definition jsonb,
+  p_players jsonb,
+  p_title text
+) returns uuid
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare v_user_id uuid := auth.uid(); v_sheet_id uuid; v_allowed boolean;
+begin
+  if v_user_id is null then raise exception 'Authentication required'; end if;
+  if p_definition is null or jsonb_typeof(p_definition) <> 'object' then
+    raise exception 'Definition must be a JSON object';
+  end if;
+  if p_players is null or jsonb_typeof(p_players) <> 'array' then
+    raise exception 'Players must be a JSON array';
+  end if;
+
+  if p_search_id is not null then
+    select exists (
+      select 1 from game_searches s
+      where s.id = p_search_id
+        and s.archived_at is null
+        and (
+          s.creator_id = v_user_id
+          or exists (
+            select 1 from participants pa
+            where pa.search_id = s.id
+              and pa.user_id = v_user_id
+              and pa.status not in ('left', 'removed', 'no_show')
+          )
+        )
+    ) into v_allowed;
+    if not v_allowed then
+      raise exception 'Only participants of this round can start a notepad';
+    end if;
+  end if;
+
+  insert into notepad_sheets (
+    title, search_id, owner_id, template_id, schema_version, definition, players, entries
+  ) values (
+    nullif(btrim(coalesce(p_title, '')), ''),
+    p_search_id,
+    v_user_id,
+    p_template_id,
+    coalesce((p_definition ->> 'schemaVersion')::int, 1),
+    p_definition,
+    p_players,
+    '{}'::jsonb
+  )
+  returning id into v_sheet_id;
+
+  return v_sheet_id;
+end;
+$$;
+
+create or replace function public.save_notepad_entries(
+  p_sheet_id uuid,
+  p_entries jsonb,
+  p_expected_revision int
+) returns int
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare v_user_id uuid := auth.uid(); v_owner uuid; v_revision int; v_status text;
+begin
+  if v_user_id is null then raise exception 'Authentication required'; end if;
+  if p_entries is null or jsonb_typeof(p_entries) <> 'object' then
+    raise exception 'Entries must be a JSON object';
+  end if;
+
+  select owner_id, revision, status into v_owner, v_revision, v_status
+  from notepad_sheets where id = p_sheet_id for update;
+  if not found then raise exception 'Notepad not found'; end if;
+  if v_owner <> v_user_id then raise exception 'Only the notepad writer can save'; end if;
+  if v_status <> 'active' then raise exception 'This notepad is finished'; end if;
+  if p_expected_revision is not null and p_expected_revision <> v_revision then
+    raise exception 'Notepad was changed elsewhere (revision %)', v_revision;
+  end if;
+
+  update notepad_sheets
+     set entries = p_entries, revision = v_revision + 1, updated_at = now()
+   where id = p_sheet_id;
+
+  return v_revision + 1;
+end;
+$$;
+
+create or replace function public.set_notepad_sheet_status(p_sheet_id uuid, p_status text)
+returns void
+language plpgsql security definer set search_path = public, auth as $$
+declare v_user_id uuid := auth.uid();
+begin
+  if v_user_id is null then raise exception 'Authentication required'; end if;
+  if p_status not in ('active', 'finished') then raise exception 'Unsupported status: %', p_status; end if;
+  update notepad_sheets set status = p_status, updated_at = now()
+   where id = p_sheet_id and owner_id = v_user_id;
+  if not found then raise exception 'Only the notepad writer can change the status'; end if;
+end;
+$$;
+
+create or replace function public.transfer_notepad_writer(p_sheet_id uuid, p_to_user_id uuid)
+returns void
+language plpgsql security definer set search_path = public, auth as $$
+declare v_user_id uuid := auth.uid(); v_search_id uuid;
+begin
+  if v_user_id is null then raise exception 'Authentication required'; end if;
+  select search_id into v_search_id
+  from notepad_sheets where id = p_sheet_id and owner_id = v_user_id for update;
+  if not found then raise exception 'Only the notepad writer can hand over'; end if;
+  if v_search_id is null then raise exception 'A notepad without a round cannot be handed over'; end if;
+  if not exists (
+    select 1 from participants pa
+    where pa.search_id = v_search_id
+      and pa.user_id = p_to_user_id
+      and pa.status not in ('left', 'removed', 'no_show')
+  ) then
+    raise exception 'The new writer must be a participant of this round';
+  end if;
+
+  update notepad_sheets set owner_id = p_to_user_id, updated_at = now() where id = p_sheet_id;
+end;
+$$;
+
+create or replace function public.save_notepad_template(
+  p_template_id uuid,
+  p_name text,
+  p_description text,
+  p_game_id uuid,
+  p_definition jsonb,
+  p_origin_template_id uuid
+) returns uuid
+language plpgsql security definer set search_path = public, auth as $$
+declare v_user_id uuid := auth.uid(); v_id uuid; v_name text := nullif(btrim(coalesce(p_name, '')), '');
+begin
+  if v_user_id is null then raise exception 'Authentication required'; end if;
+  if v_name is null then raise exception 'A template needs a name'; end if;
+  if p_definition is null or jsonb_typeof(p_definition) <> 'object' then
+    raise exception 'Definition must be a JSON object';
+  end if;
+
+  if p_template_id is null then
+    insert into notepad_templates (
+      name, description, kind, owner_id, game_id, origin_template_id, schema_version, definition
+    ) values (
+      v_name,
+      nullif(btrim(coalesce(p_description, '')), ''),
+      'user',
+      v_user_id,
+      p_game_id,
+      p_origin_template_id,
+      coalesce((p_definition ->> 'schemaVersion')::int, 1),
+      p_definition
+    )
+    returning id into v_id;
+    return v_id;
+  end if;
+
+  update notepad_templates
+     set name = v_name,
+         description = nullif(btrim(coalesce(p_description, '')), ''),
+         game_id = p_game_id,
+         schema_version = coalesce((p_definition ->> 'schemaVersion')::int, 1),
+         definition = p_definition,
+         updated_at = now()
+   where id = p_template_id and owner_id = v_user_id and kind = 'user'
+  returning id into v_id;
+  if v_id is null then raise exception 'Only your own templates can be changed'; end if;
+  return v_id;
+end;
+$$;
+
+create or replace function public.delete_notepad_template(p_template_id uuid)
+returns void
+language plpgsql security definer set search_path = public, auth as $$
+declare v_user_id uuid := auth.uid();
+begin
+  if v_user_id is null then raise exception 'Authentication required'; end if;
+  delete from notepad_templates
+   where id = p_template_id and owner_id = v_user_id and kind = 'user';
+  if not found then raise exception 'Only your own templates can be deleted'; end if;
+end;
+$$;
+
+revoke all on function
+  public.create_notepad_sheet(uuid,uuid,jsonb,jsonb,text),
+  public.save_notepad_entries(uuid,jsonb,int),
+  public.set_notepad_sheet_status(uuid,text),
+  public.transfer_notepad_writer(uuid,uuid),
+  public.save_notepad_template(uuid,text,text,uuid,jsonb,uuid),
+  public.delete_notepad_template(uuid)
+from public;
+
+grant execute on function
+  public.create_notepad_sheet(uuid,uuid,jsonb,jsonb,text),
+  public.save_notepad_entries(uuid,jsonb,int),
+  public.set_notepad_sheet_status(uuid,text),
+  public.transfer_notepad_writer(uuid,uuid),
+  public.save_notepad_template(uuid,text,text,uuid,jsonb,uuid),
+  public.delete_notepad_template(uuid)
+to authenticated;
+
+-- ============================================================
+-- Verifikation (Ergebnisse prüfen, nicht nur Ausführung)
+-- ============================================================
+-- select tablename, rowsecurity from pg_tables
+--  where schemaname = 'public' and tablename in ('notepad_templates','notepad_sheets');
+-- select polname from pg_policies
+--  where schemaname = 'public' and tablename in ('notepad_templates','notepad_sheets');
+-- select proname, prosecdef from pg_proc
+--  where pronamespace = 'public'::regnamespace and proname like 'notepad%' or proname like '%notepad%';
+-- select proname, has_function_privilege('authenticated', oid, 'execute') as authenticated_can_execute
+--   from pg_proc where pronamespace = 'public'::regnamespace and proname like '%notepad%';
+-- select has_table_privilege('authenticated', 'notepad_sheets', 'insert') as should_be_false;

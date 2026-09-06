@@ -12,7 +12,7 @@ export default function Offline() {
         Gerade offline.
       </h1>
       <p className="text-sm font-semibold text-ink-soft">
-        Keine Verbindung. Sobald du wieder online bist, geht's am Tisch weiter —
+        Keine Verbindung. Sobald du wieder online bist, geht&apos;s am Tisch weiter —
         einfach neu laden.
       </p>
     </main>

@@ -1,8 +1,7 @@
--- ============================================================
--- Release 1/2 — Admin-Basis (Konzept §14.3).
--- Gibt role 'admin'/'moderator' volle Rechte auf Events & Locations.
--- Einmal im Supabase SQL-Editor ausführen.
--- ============================================================
+-- Superseded by migrations/20260906000000_mvp_hardening.sql, which uses a
+-- SECURITY DEFINER helper to avoid profile-policy recursion. Keep this file as
+-- a no-op so a later manual run cannot replace the hardened policy.
+/*
 
 drop policy if exists "events admin all" on events;
 create policy "events admin all" on events for all
@@ -28,3 +27,4 @@ create policy "locations admin all" on locations for all
 
 -- Dich selbst zum Admin machen: User-ID aus Authentication → Users kopieren.
 -- update profiles set role = 'admin' where id = 'DEINE-USER-UUID';
+*/

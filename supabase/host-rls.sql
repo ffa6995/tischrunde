@@ -1,7 +1,7 @@
--- ============================================================
--- Release 2 — Host-Moderation, RLS-Härtung & Auto-Status.
--- Einmal im Supabase SQL-Editor ausführen.
--- ============================================================
+-- Superseded by migrations/20260906000000_mvp_hardening.sql.
+-- Do not run this legacy helper after the hardened migration: it would restore
+-- direct participant writes. Apply the versioned migration instead.
+/*
 
 -- Host darf Teilnehmer SEINER Runde verwalten (bestätigen/entfernen).
 drop policy if exists "participants host manage" on participants;
@@ -56,3 +56,4 @@ drop trigger if exists trg_participants_status on participants;
 create trigger trg_participants_status
   after insert or update or delete on participants
   for each row execute function tr_update_search_status();
+*/

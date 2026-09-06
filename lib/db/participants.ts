@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Participant, SkillLevel } from "@/lib/types";
+import type { SkillLevel } from "@/lib/types";
 
 export interface JoinRoundInput {
   searchId: string;
@@ -13,49 +13,15 @@ export interface JoinRoundInput {
 export async function joinRound(
   supabase: SupabaseClient,
   input: JoinRoundInput,
-): Promise<Participant> {
-  const { data, error } = await supabase
-    .from("participants")
-    .upsert(
-      {
-        search_id: input.searchId,
-        user_id: input.userId,
-        skill_level: input.skillLevel,
-        brings_game: input.bringsGame,
-        brings_note: input.bringsGame ? (input.bringsNote ?? null) : null,
-        role: "player",
-        status: "joined",
-      },
-      { onConflict: "search_id,user_id" },
-    )
-    .select()
-    .single();
-  if (error) throw error;
-
-  await supabase.from("activity_events").insert({
-    user_id: input.userId,
-    type: "round_joined",
-    source_type: "game_search",
-    source_id: input.searchId,
-    metadata: {
-      brings_game: input.bringsGame,
-      game_name: input.gameName ?? null,
-      skill: input.skillLevel,
-    },
+): Promise<void> {
+  const { error } = await supabase.rpc("join_round", {
+    p_search_id: input.searchId,
+    p_skill_level: input.skillLevel,
+    p_brings_game: input.bringsGame,
+    p_brings_note: input.bringsNote ?? null,
+    p_game_name: input.gameName ?? null,
   });
-
-  // Bring-Mechanik (Konzept §11.3): eigenes Signal, wenn jemand mitbringt.
-  if (input.bringsGame) {
-    await supabase.from("activity_events").insert({
-      user_id: input.userId,
-      type: "game_brought",
-      source_type: "game_search",
-      source_id: input.searchId,
-      metadata: { game_name: input.gameName ?? null, note: input.bringsNote ?? null },
-    });
-  }
-
-  return data as Participant;
+  if (error) throw error;
 }
 
 export interface CheckInInput {
@@ -71,24 +37,13 @@ export async function checkIn(
   supabase: SupabaseClient,
   input: CheckInInput,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("participants")
-    .update({ status: "confirmed" })
-    .eq("search_id", input.searchId)
-    .eq("user_id", input.userId);
-  if (error) throw error;
-
-  await supabase.from("activity_events").insert({
-    user_id: input.userId,
-    type: "checked_in",
-    source_type: "game_search",
-    source_id: input.searchId,
-    metadata: {
-      game_name: input.gameName ?? null,
-      event_id: input.eventId ?? null,
-      event_name: input.eventName ?? null,
-    },
+  const { error } = await supabase.rpc("check_in_round", {
+    p_search_id: input.searchId,
+    p_game_name: input.gameName ?? null,
+    p_event_id: input.eventId ?? null,
+    p_event_name: input.eventName ?? null,
   });
+  if (error) throw error;
 }
 
 /** Host bestätigt Anwesenheit eines Teilnehmers (Konzept §5.2). */
@@ -96,22 +51,12 @@ export async function hostConfirmParticipant(
   supabase: SupabaseClient,
   searchId: string,
   targetUserId: string,
-  hostId: string,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("participants")
-    .update({ status: "confirmed" })
-    .eq("search_id", searchId)
-    .eq("user_id", targetUserId);
-  if (error) throw error;
-
-  await supabase.from("activity_events").insert({
-    user_id: targetUserId,
-    type: "host_confirmed",
-    source_type: "game_search",
-    source_id: searchId,
-    created_by: hostId,
+  const { error } = await supabase.rpc("confirm_participant", {
+    p_search_id: searchId,
+    p_target_user_id: targetUserId,
   });
+  if (error) throw error;
 }
 
 /**
@@ -123,23 +68,17 @@ export async function removeParticipant(
   searchId: string,
   targetUserId: string,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("participants")
-    .update({ status: "removed" })
-    .eq("search_id", searchId)
-    .eq("user_id", targetUserId);
+  const { error } = await supabase.rpc("remove_participant", {
+    p_search_id: searchId,
+    p_target_user_id: targetUserId,
+  });
   if (error) throw error;
 }
 
 export async function leaveRound(
   supabase: SupabaseClient,
   searchId: string,
-  userId: string,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("participants")
-    .update({ status: "left" })
-    .eq("search_id", searchId)
-    .eq("user_id", userId);
+  const { error } = await supabase.rpc("leave_round", { p_search_id: searchId });
   if (error) throw error;
 }

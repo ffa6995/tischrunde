@@ -53,10 +53,10 @@ export async function setRoundStatus(
   searchId: string,
   status: "open" | "full" | "active" | "closed" | "cancelled",
 ): Promise<void> {
-  const { error } = await supabase
-    .from("game_searches")
-    .update({ status })
-    .eq("id", searchId);
+  const { error } = await supabase.rpc("set_round_status", {
+    p_search_id: searchId,
+    p_status: status,
+  });
   if (error) throw error;
 }
 
@@ -69,45 +69,23 @@ export interface CreateRoundInput {
   gameSource: GameSource;
   desiredLevel: DesiredLevel;
   beginnerFriendly: boolean;
-  visibility: "public" | "invite" | "unlisted";
+  visibility: "public" | "unlisted";
 }
 
 export async function createRound(
   supabase: SupabaseClient,
   input: CreateRoundInput,
 ): Promise<string> {
-  const { data, error } = await supabase
-    .from("game_searches")
-    .insert({
-      event_id: input.eventId,
-      game_id: input.gameId,
-      creator_id: input.creatorId,
-      title: input.title,
-      seats_total: input.seatsTotal,
-      game_source: input.gameSource,
-      desired_level: input.desiredLevel,
-      beginner_friendly: input.beginnerFriendly,
-      visibility: input.visibility,
-    })
-    .select("id")
-    .single();
+  const { data, error } = await supabase.rpc("create_round", {
+    p_event_id: input.eventId,
+    p_game_id: input.gameId,
+    p_title: input.title,
+    p_seats_total: input.seatsTotal,
+    p_game_source: input.gameSource,
+    p_desired_level: input.desiredLevel,
+    p_beginner_friendly: input.beginnerFriendly,
+    p_visibility: input.visibility,
+  });
   if (error) throw error;
-
-  // Ersteller als Host eintragen
-  await supabase.from("participants").insert({
-    search_id: data.id,
-    user_id: input.creatorId,
-    role: "host",
-    status: "joined",
-  });
-
-  // Aktivität protokollieren (Quelle für spätere Stats/Trust)
-  await supabase.from("activity_events").insert({
-    user_id: input.creatorId,
-    type: "round_created",
-    source_type: "game_search",
-    source_id: data.id,
-  });
-
-  return data.id as string;
+  return data as string;
 }

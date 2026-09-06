@@ -40,7 +40,7 @@ export function CreateRoundWizard({ eventId }: { eventId: string }) {
   const [seats, setSeats] = useState(4);
   const [source, setSource] = useState<GameSource>("on_site");
   const [level, setLevel] = useState<DesiredLevel>("any");
-  const [visibility, setVisibility] = useState<"public" | "invite">("public");
+  const visibility = "public" as const;
 
   const hasIdentity = !!session?.user?.id;
 
@@ -250,34 +250,15 @@ export function CreateRoundWizard({ eventId }: { eventId: string }) {
         </section>
       )}
 
-      {/* Schritt 3: Sichtbarkeit + eröffnen */}
+      {/* Schritt 3: öffentlich eröffnen */}
       {step === 3 && game && (
         <section className="flex flex-col gap-4">
           <p className="font-display text-2xl font-extrabold text-ink">
-            Sichtbarkeit
+            Öffentliche Runde
           </p>
-          <div className="flex gap-2">
-            {(
-              [
-                { v: "public", label: "Öffentlich" },
-                { v: "invite", label: "Nur Einladung" },
-              ] as const
-            ).map((o) => (
-              <button
-                key={o.v}
-                type="button"
-                onClick={() => setVisibility(o.v)}
-                aria-pressed={visibility === o.v}
-                className={`flex-1 rounded-[13px] px-4 py-3 text-sm font-extrabold ${
-                  visibility === o.v
-                    ? "border border-green bg-green/15 text-green-deep"
-                    : "border border-line bg-surface text-ink-soft"
-                }`}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
+          <p className="text-sm font-semibold text-ink-soft">
+            Die Runde erscheint auf dem öffentlichen Tischplan des Events.
+          </p>
 
           {!hasIdentity && (
             <div className="rounded-[var(--radius-lg)] border border-line bg-surface p-4 shadow-[0_5px_0_var(--line)]">

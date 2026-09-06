@@ -20,7 +20,7 @@ function str(v: unknown): string | null {
 
 export function deriveTrust(activities: ActivityEvent[]): DerivedTrust {
   let joined = 0;
-  let attended = 0;
+  const attendedRounds = new Set<string>();
   let hosted = 0;
   let brought = 0;
   let teaches = false;
@@ -36,8 +36,9 @@ export function deriveTrust(activities: ActivityEvent[]): DerivedTrust {
         joined++;
         if (a.metadata?.skill === "teaches") teaches = true;
         break;
-      case "checked_in": {
-        attended++;
+      case "checked_in":
+      case "host_confirmed": {
+        if (a.source_id) attendedRounds.add(a.source_id);
         const eid = str(a.metadata?.event_id);
         const ename = str(a.metadata?.event_name);
         if (eid && ename) stamps.set(eid, ename);
@@ -53,6 +54,7 @@ export function deriveTrust(activities: ActivityEvent[]): DerivedTrust {
   }
 
   const signals: string[] = [];
+  const attended = attendedRounds.size;
   if (attended > 0) signals.push(`${attended}× erschienen`);
   else if (joined > 0) signals.push(`War ${joined}× dabei`);
   if (hosted > 0) signals.push(hosted === 1 ? "Host" : `${hosted}× Host`);

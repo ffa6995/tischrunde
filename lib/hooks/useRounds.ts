@@ -57,7 +57,7 @@ export interface CreateRoundForm {
   gameSource: GameSource;
   desiredLevel: DesiredLevel;
   beginnerFriendly: boolean;
-  visibility: "public" | "invite" | "unlisted";
+  visibility: "public" | "unlisted";
 }
 
 export function useCreateRound(eventId: string) {
@@ -195,13 +195,6 @@ function applyDemoJoin(
       skill: form.skillLevel,
     },
   });
-  if (form.bringsGame) {
-    appendDemoActivity(qc, userId, {
-      type: "game_brought",
-      sourceId: searchId,
-      metadata: { game_name: form.gameName ?? null },
-    });
-  }
 }
 
 export function useJoinRound(searchId: string, eventId: string | null) {
@@ -263,7 +256,7 @@ export function useLeaveRound(searchId: string, eventId: string | null) {
         }
         return;
       }
-      await dbLeaveRound(supabase, searchId, userId);
+      await dbLeaveRound(supabase, searchId);
     },
     onSuccess: () => {
       if (isSupabaseConfigured()) {

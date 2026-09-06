@@ -35,6 +35,14 @@ export function useRealtimeRound(searchId: string, eventId: string | null) {
           if (eventId) qc.invalidateQueries({ queryKey: ["rounds", eventId] });
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "game_searches", filter: `id=eq.${searchId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ["round", searchId] });
+          if (eventId) qc.invalidateQueries({ queryKey: ["rounds", eventId] });
+        },
+      )
       .subscribe();
 
     return () => {

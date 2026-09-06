@@ -37,7 +37,7 @@ const REMOVE_REASONS = [
 ];
 
 export function BoardView({ searchId }: { searchId: string }) {
-  const { data: round, isLoading } = useRound(searchId);
+  const { data: round, isLoading, isError, error, refetch } = useRound(searchId);
   const { data: event } = useEvent(round?.event_id ?? undefined);
   const { data: session } = useSession();
   const join = useJoinRound(searchId, round?.event_id ?? null);
@@ -61,6 +61,18 @@ export function BoardView({ searchId }: { searchId: string }) {
     return (
       <main className="mx-auto w-full max-w-[520px] px-5 py-6">
         <div className="h-64 animate-pulse rounded-[24px] border border-line bg-surface" />
+      </main>
+    );
+  }
+
+  if (isError) {
+    return (
+      <main className="mx-auto w-full max-w-[520px] px-5 py-6 pb-24">
+        <AppHeader back={{ href: "/", label: "Zurück" }} />
+        <div role="alert" className="mt-8 rounded-[var(--radius-lg)] border border-terra bg-surface p-5 text-center text-sm font-semibold text-ink-soft">
+          {(error as Error).message || "Die Runde konnte nicht geladen werden."}
+          <button type="button" onClick={() => refetch()} className="mt-3 font-extrabold text-terra underline">Erneut versuchen</button>
+        </div>
       </main>
     );
   }
@@ -159,7 +171,7 @@ export function BoardView({ searchId }: { searchId: string }) {
                 onChange={(e) => setBringsGame(e.target.checked)}
                 className="size-5 accent-[var(--green)]"
               />
-              Ich bringe das Spiel mit
+              Ich sage zu, das Spiel mitzubringen
               {bringRedundant && bringHint && (
                 <span
                   title={bringHint}
@@ -233,6 +245,13 @@ export function BoardView({ searchId }: { searchId: string }) {
         </motion.div>
       )}
 
+      {(join.isError || leave.isError || checkIn.isError || host.confirm.isError || host.remove.isError || host.setStatus.isError) && (
+        <div role="alert" className="rounded-[14px] border border-terra bg-surface px-4 py-3 text-sm font-semibold text-terra">
+          {[join.error, leave.error, checkIn.error, host.confirm.error, host.remove.error, host.setStatus.error].find(Boolean)?.message || "Die Änderung konnte nicht gespeichert werden."}
+          <button type="button" onClick={() => refetch()} className="ml-2 font-extrabold underline">Aktualisieren</button>
+        </div>
+      )}
+
       {round.status !== "open" && (
         <div className="flex justify-center">
           <span className="rounded-full border border-line bg-surface-2 px-3 py-1 text-xs font-black uppercase tracking-wider text-ink-soft">
@@ -256,7 +275,7 @@ export function BoardView({ searchId }: { searchId: string }) {
           <p className="text-sm font-bold text-ink">
             Noch kein Spiel gesichert — niemand bringt{" "}
             {round.game?.name ?? "das Spiel"} mit. Wähle „Ich bringe das Spiel
-            mit", wenn du es dabei hast.
+            mit&quot;, wenn du es dabei hast.
           </p>
         </div>
       )}

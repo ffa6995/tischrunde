@@ -23,7 +23,7 @@ export async function upsertProfile(
 ): Promise<Profile> {
   const { data, error } = await supabase
     .from("profiles")
-    .upsert({ id: userId, display_name: displayName, role: "guest" })
+    .upsert({ id: userId, display_name: displayName })
     .select()
     .single();
   if (error) throw error;

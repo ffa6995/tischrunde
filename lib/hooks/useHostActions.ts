@@ -51,9 +51,8 @@ export function useHostActions(searchId: string, eventId: string | null) {
         }));
         return;
       }
-      const hid = hostId();
-      if (!hid) throw new Error("Keine Host-Session.");
-      await hostConfirmParticipant(supabase, searchId, targetUserId, hid);
+      if (!hostId()) throw new Error("Keine Host-Session.");
+      await hostConfirmParticipant(supabase, searchId, targetUserId);
     },
     onSuccess: () => configured && invalidate(qc, searchId, eventId),
   });

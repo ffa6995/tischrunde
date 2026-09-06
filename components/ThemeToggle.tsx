@@ -1,20 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Moon, Sun } from "lucide-react";
 
 type Theme = "light" | "dark";
 
 /** Hell/Dunkel über data-theme auf <html> (CLAUDE.md §5.1), persistiert. */
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("light");
-
-  useEffect(() => {
-    const current = document.documentElement.getAttribute(
-      "data-theme",
-    ) as Theme | null;
-    if (current) setTheme(current);
-  }, []);
+  const [theme, setTheme] = useState<Theme>(() =>
+    typeof document === "undefined"
+      ? "light"
+      : (document.documentElement.getAttribute("data-theme") as Theme | null) ?? "light",
+  );
 
   function toggle() {
     const next: Theme = theme === "light" ? "dark" : "light";

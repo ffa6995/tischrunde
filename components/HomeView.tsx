@@ -14,7 +14,7 @@ function EventListItem({ event }: { event: Event }) {
 }
 
 export function HomeView() {
-  const { data: events, isLoading } = useEvents();
+  const { data: events, isLoading, isError, error, refetch } = useEvents();
 
   return (
     <main className="mx-auto flex w-full max-w-[520px] flex-col gap-4 px-5 py-6 pb-24 lg:max-w-[840px] lg:py-10">
@@ -36,6 +36,11 @@ export function HomeView() {
 
       {isLoading ? (
         <div className="h-32 animate-pulse rounded-[var(--radius-lg)] border border-line bg-surface" />
+      ) : isError ? (
+        <div role="alert" className="rounded-[var(--radius-lg)] border border-terra bg-surface p-6 text-center text-sm font-semibold text-ink-soft">
+          {(error as Error).message || "Treffen konnten nicht geladen werden."}
+          <button type="button" onClick={() => refetch()} className="mt-3 block w-full font-extrabold text-terra underline">Erneut versuchen</button>
+        </div>
       ) : events && events.length > 0 ? (
         <div className="flex flex-col gap-3.5 lg:grid lg:grid-cols-2 lg:gap-4">
           {events.map((e) => (

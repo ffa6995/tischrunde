@@ -9,12 +9,14 @@ import { QRCodeBlock } from "@/components/QRCodeBlock";
 import { DemoBanner } from "@/components/DemoBanner";
 import { useEvent } from "@/lib/hooks/useEvents";
 import { useRounds } from "@/lib/hooks/useRounds";
+import { useRealtimeEvent } from "@/lib/hooks/useRealtimeEvent";
 import { useLocation, useLocationGames } from "@/lib/hooks/useLocations";
 import { formatEventDate, locationAddress } from "@/lib/labels";
 
 export function EventDetailView({ eventId }: { eventId: string }) {
-  const { data: event, isLoading: eventLoading } = useEvent(eventId);
-  const { data: rounds, isLoading: roundsLoading } = useRounds(eventId);
+  const { data: event, isLoading: eventLoading, isError: eventError, error: eventLoadError, refetch: refetchEvent } = useEvent(eventId);
+  const { data: rounds, isLoading: roundsLoading, isError: roundsError, error: roundsLoadError, refetch: refetchRounds } = useRounds(eventId);
+  useRealtimeEvent(eventId);
   const { data: location } = useLocation(event?.location_id);
   const { data: locationGames } = useLocationGames(event?.location_id);
 
@@ -22,6 +24,18 @@ export function EventDetailView({ eventId }: { eventId: string }) {
     return (
       <main className="mx-auto w-full max-w-[520px] px-5 py-6">
         <div className="h-40 animate-pulse rounded-[var(--radius-lg)] border border-line bg-surface" />
+      </main>
+    );
+  }
+
+  if (eventError) {
+    return (
+      <main className="mx-auto w-full max-w-[520px] px-5 py-6 pb-24">
+        <AppHeader back={{ href: "/", label: "Alle Treffen" }} />
+        <div role="alert" className="mt-8 rounded-[var(--radius-lg)] border border-terra bg-surface p-5 text-center text-sm font-semibold text-ink-soft">
+          {(eventLoadError as Error).message || "Das Event konnte nicht geladen werden."}
+          <button type="button" onClick={() => refetchEvent()} className="mt-3 font-extrabold text-terra underline">Erneut versuchen</button>
+        </div>
       </main>
     );
   }
@@ -140,9 +154,14 @@ export function EventDetailView({ eventId }: { eventId: string }) {
             </Link>
           </div>
 
-          {roundsLoading ? (
+      {roundsLoading ? (
             <div className="h-20 animate-pulse rounded-[18px] border border-line bg-surface" />
-          ) : rounds && rounds.length > 0 ? (
+      ) : roundsError ? (
+        <div role="alert" className="rounded-[var(--radius-lg)] border border-terra bg-surface p-5 text-center text-sm font-semibold text-ink-soft">
+          {(roundsLoadError as Error).message || "Die Runden konnten nicht geladen werden."}
+          <button type="button" onClick={() => refetchRounds()} className="mt-3 font-extrabold text-terra underline">Erneut versuchen</button>
+        </div>
+      ) : rounds && rounds.length > 0 ? (
             <div className="flex flex-col gap-2.5">
               {rounds.map((r) => (
                 <RoundRow key={r.id} round={r} />

@@ -1,0 +1,22 @@
+-- Manual SQL acceptance checks for a disposable local Supabase/Postgres project.
+-- Run after schema.sql or the versioned hardening migration. These checks require
+-- separate authenticated sessions; they are deliberately not presented as a
+-- substitute for runtime RLS testing in this repository.
+--
+-- 1. As a regular user, INSERT/UPDATE profiles with role='admin' or a changed
+--    verification_status must fail; changing display_name must succeed.
+-- 2. As a regular user, direct INSERT/UPDATE/DELETE on game_searches,
+--    participants, and activity_events must fail.
+-- 3. Call join_round concurrently for the last available seat from two users;
+--    exactly one call must succeed and the round becomes full.
+-- 4. join_round must reject a private/unlisted, full, active, closed, cancelled,
+--    approval-mode, or removed/left participant row.
+-- 5. Fail a create_round/join_round/check_in_round call midway (for example with
+--    a bad FK) and verify that neither its participant nor activity row remains.
+-- 6. Repeat check_in_round and confirm_participant for one participant; each
+--    activity type must have at most one row for that round and trust counts the
+--    round once. Confirming a promised game should create game_brought only then.
+-- 7. Verify a public user cannot select participants of unpublished/private
+--    rounds, while that round's creator can still select their own rows.
+-- 8. Close a full round and reopen it as its host; it must resolve to `full`,
+--    rather than advertising an unavailable seat as `open`.

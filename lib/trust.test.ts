@@ -83,4 +83,14 @@ describe("deriveTrust", () => {
     );
     expect(t.stamps).toHaveLength(2);
   });
+
+  it("counts self and host confirmation once per round", () => {
+    const t = deriveTrust([
+      ev("checked_in", { event_id: "ev1", event_name: "Spielerei" }, "r1"),
+      ev("host_confirmed", null, "r1"),
+      ev("host_confirmed", null, "r2"),
+    ]);
+    expect(t.attended).toBe(2);
+    expect(t.signals).toContain("2× erschienen");
+  });
 });

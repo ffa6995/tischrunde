@@ -105,6 +105,15 @@ export function useCheckIn(
             event_name: eventName,
           },
         });
+        const round = qc.getQueryData<RoundWithGame | null>(["round", searchId]);
+        const me = round?.participants.find((participant) => participant.user_id === userId);
+        if (me?.brings_game) {
+          appendDemoActivity(qc, userId, {
+            type: "game_brought",
+            sourceId: searchId,
+            metadata: { game_name: gameName },
+          });
+        }
         markConfirmedInCache(qc, searchId, eventId, userId);
         return;
       }

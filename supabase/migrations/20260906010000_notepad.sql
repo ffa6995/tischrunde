@@ -302,3 +302,36 @@ to authenticated;
 -- select proname, has_function_privilege('authenticated', oid, 'execute') as authenticated_can_execute
 --   from pg_proc where pronamespace = 'public'::regnamespace and proname like '%notepad%';
 -- select has_table_privilege('authenticated', 'notepad_sheets', 'insert') as should_be_false;
+
+-- ============================================================
+-- SEED: System-Vorlagen (kind='system', owner_id null)
+-- ============================================================
+insert into games (id, name, min_players, max_players, theme) values
+  ('11111111-1111-1111-1111-111111111107','Skyjo',2,8,'standard')
+on conflict (id) do nothing;
+
+insert into notepad_templates (id, name, description, kind, owner_id, game_id, schema_version, definition) values
+  ('44444444-4444-4444-4444-444444444401',
+   'Runden-Zettel',
+   'Zeile = Runde, Spalte = Spieler, Summe automatisch.',
+   'system', null, null, 1,
+   '{"schemaVersion":1,"blocks":[{"id":"table","type":"round_table","title":"Punkte","config":{"scoreDirection":"highest_wins","limit":null,"limitBehavior":"none","allowNegative":true}}]}'::jsonb),
+
+  ('44444444-4444-4444-4444-444444444402',
+   'Skyjo',
+   'Niedrigste Summe gewinnt, Spielende bei 100 Punkten.',
+   'system', null, '11111111-1111-1111-1111-111111111107', 1,
+   '{"schemaVersion":1,"blocks":[{"id":"table","type":"round_table","title":"Punkte","config":{"scoreDirection":"lowest_wins","limit":100,"limitBehavior":"end_at","allowNegative":true}}]}'::jsonb),
+
+  ('44444444-4444-4444-4444-444444444403',
+   'Jass-Tafel (Schieber)',
+   'Zwei Teams auf 2500, Weis wird mitgezählt.',
+   'system', null, '11111111-1111-1111-1111-111111111106', 1,
+   '{"schemaVersion":1,"blocks":[{"id":"board","type":"jass_board","title":"Tafel","config":{"targetScore":2500,"weisEnabled":true,"matchBonus":100,"strokeStyle":"swiss","teamALabel":"Wir","teamBLabel":"Ihr"}},{"id":"note","type":"text","title":"Notiz","config":{"placeholder":"Wer gibt, Trumpf-Abmachungen …"}}]}'::jsonb),
+
+  ('44444444-4444-4444-4444-444444444404',
+   'Strichliste',
+   'Ein Zähler pro Spieler — Stiche, Siege, Chips.',
+   'system', null, null, 1,
+   '{"schemaVersion":1,"blocks":[{"id":"tally","type":"tally","title":"Striche","config":{"step":1,"allowNegative":false}}]}'::jsonb)
+on conflict (id) do nothing;

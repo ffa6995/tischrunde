@@ -8,7 +8,7 @@ import {
   hostConfirmParticipant,
   removeParticipant,
 } from "@/lib/db/participants";
-import { setRoundStatus } from "@/lib/db/rounds";
+import { archiveRound, setRoundStatus } from "@/lib/db/rounds";
 import type { SessionState } from "./useSession";
 import type { RoundWithGame, SearchStatus } from "@/lib/types";
 
@@ -84,5 +84,19 @@ export function useHostActions(searchId: string, eventId: string | null) {
     onSuccess: () => configured && invalidate(qc, searchId, eventId),
   });
 
-  return { confirm, remove, setStatus };
+  const archive = useMutation<void, Error, void>({
+    mutationFn: async () => {
+      if (!configured) {
+        patchRound(qc, searchId, eventId, (r) => ({
+          ...r,
+          archived_at: new Date().toISOString(),
+        }));
+        return;
+      }
+      await archiveRound(supabase, searchId);
+    },
+    onSuccess: () => configured && invalidate(qc, searchId, eventId),
+  });
+
+  return { confirm, remove, setStatus, archive };
 }

@@ -312,3 +312,97 @@ revoke all on function public.is_staff() from public;
 grant execute on function public.is_staff() to authenticated;
 revoke all on function public.create_round(uuid,uuid,text,int,text,text,boolean,text), public.join_round(uuid,text,boolean,text,text), public.leave_round(uuid), public.check_in_round(uuid,text,uuid,text), public.confirm_participant(uuid,uuid), public.remove_participant(uuid,uuid), public.set_round_status(uuid,text) from public;
 grant execute on function public.create_round(uuid,uuid,text,int,text,text,boolean,text), public.join_round(uuid,text,boolean,text,text), public.leave_round(uuid), public.check_in_round(uuid,text,uuid,text), public.confirm_participant(uuid,uuid), public.remove_participant(uuid,uuid), public.set_round_status(uuid,text) to authenticated;
+
+-- ---------- Round ownership and lifecycle: archiving a closed round ----------
+alter table game_searches add column if not exists archived_at timestamptz null;
+create index if not exists idx_searches_event_archived on game_searches (event_id, archived_at);
+
+drop policy if exists "searches read accessible" on game_searches;
+create policy "searches read accessible" on game_searches for select using (
+  creator_id = auth.uid()
+  or (
+    archived_at is null
+    and visibility = 'public'
+    and exists (
+      select 1 from events e
+      where e.id = game_searches.event_id
+        and e.visibility = 'public'
+        and e.status = 'published'
+    )
+  )
+);
+
+drop policy if exists "participants read accessible" on participants;
+create policy "participants read accessible" on participants for select using (
+  user_id = auth.uid()
+  or exists (
+    select 1 from game_searches s
+    join events e on e.id = s.event_id
+    where s.id = participants.search_id
+      and s.creator_id = auth.uid()
+  )
+  or exists (
+    select 1 from game_searches s
+    join events e on e.id = s.event_id
+    where s.id = participants.search_id
+      and s.archived_at is null
+      and s.visibility = 'public'
+      and e.visibility = 'public'
+      and e.status = 'published'
+  )
+);
+
+create or replace function public.join_round(
+  p_search_id uuid, p_skill_level text, p_brings_game boolean,
+  p_brings_note text default null, p_game_name text default null
+) returns void
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare v_user_id uuid := auth.uid(); v_total int; v_status text; v_visibility text;
+  v_join_mode text; v_count int; v_participant_status text; v_archived timestamptz;
+begin
+  if v_user_id is null then raise exception 'Authentication required'; end if;
+  if p_skill_level not in ('beginner','advanced','learning','teaches','any') then raise exception 'Invalid skill level'; end if;
+  select s.seats_total, s.status, s.visibility, s.join_mode, s.archived_at into v_total, v_status, v_visibility, v_join_mode, v_archived
+  from game_searches s join events e on e.id = s.event_id
+  where s.id = p_search_id and e.visibility = 'public' and e.status = 'published'
+  for update of s;
+  if not found or v_archived is not null or v_visibility <> 'public' or v_join_mode <> 'open' or v_status <> 'open' then
+    raise exception 'Round is not open for joining';
+  end if;
+  select status into v_participant_status from participants where search_id = p_search_id and user_id = v_user_id for update;
+  if found then
+    if v_participant_status in ('left', 'removed', 'no_show') then raise exception 'This participation cannot be resumed'; end if;
+    return;
+  end if;
+  select count(*) into v_count from participants where search_id = p_search_id and status not in ('left','removed','no_show');
+  if v_count >= v_total then raise exception 'Round is full'; end if;
+  insert into participants (search_id, user_id, role, skill_level, brings_game, brings_note, status)
+  values (p_search_id, v_user_id, 'player', p_skill_level, p_brings_game, case when p_brings_game then nullif(trim(p_brings_note), '') end, 'joined');
+  perform public.log_round_activity(v_user_id, 'round_joined', p_search_id,
+    jsonb_build_object('brings_game_promise', p_brings_game, 'game_name', p_game_name, 'skill', p_skill_level), v_user_id);
+end;
+$$;
+
+create or replace function public.archive_round(p_search_id uuid) returns void
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare v_user_id uuid := auth.uid(); v_status text; v_archived timestamptz;
+begin
+  if v_user_id is null then raise exception 'Authentication required'; end if;
+  select status, archived_at into v_status, v_archived
+  from game_searches where id = p_search_id and creator_id = v_user_id for update;
+  if not found then raise exception 'Only the round host can archive this round'; end if;
+  if v_archived is not null then raise exception 'Round is already archived'; end if;
+  if v_status <> 'closed' then raise exception 'Only a closed round can be archived'; end if;
+  update game_searches set archived_at = now(), updated_at = now() where id = p_search_id;
+  perform public.log_round_activity(v_user_id, 'round_archived', p_search_id, null, v_user_id);
+end;
+$$;
+
+revoke all on function public.archive_round(uuid) from public;
+grant execute on function public.archive_round(uuid) to authenticated;

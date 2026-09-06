@@ -30,6 +30,7 @@ export async function getRoundsForEvent(
     .select(ROUND_SELECT)
     .eq("event_id", eventId)
     .eq("visibility", "public")
+    .is("archived_at", null)
     .order("created_at", { ascending: true });
   if (error) throw error;
   return (data ?? []).map((r) => toRoundWithGame(r as Record<string, unknown>));
@@ -56,6 +57,16 @@ export async function setRoundStatus(
   const { error } = await supabase.rpc("set_round_status", {
     p_search_id: searchId,
     p_status: status,
+  });
+  if (error) throw error;
+}
+
+export async function archiveRound(
+  supabase: SupabaseClient,
+  searchId: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("archive_round", {
+    p_search_id: searchId,
   });
   if (error) throw error;
 }

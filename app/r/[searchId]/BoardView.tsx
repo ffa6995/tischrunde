@@ -101,7 +101,8 @@ export function BoardView({ searchId }: { searchId: string }) {
   const subtitle = `${GAME_SOURCE_LABEL[round.game_source]} · sucht ${LEVEL_LABEL[round.desired_level]}`;
   const isHost = !!userId && round.creator_id === userId;
   const manageable = round.participants.filter((p) => p.role !== "host");
-  const isClosed = round.status === "closed" || round.status === "cancelled";
+  const isArchived = round.archived_at !== null;
+  const isClosed = round.status === "closed" || round.status === "cancelled" || isArchived;
   const onSiteGame = round.game_source === "on_site";
   const otherBringer = round.participants.find(
     (p) => p.brings_game && p.user_id !== userId,
@@ -131,7 +132,7 @@ export function BoardView({ searchId }: { searchId: string }) {
       />
 
       {/* Identität nötig zum Beitreten */}
-      {!userId && !alreadyIn && (
+      {!userId && !alreadyIn && !isArchived && (
         <section className="rounded-[var(--radius-lg)] border border-line bg-surface p-4 shadow-[0_5px_0_var(--line)]">
           <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-terra">
             Kurz vorstellen — dann mitspielen
@@ -141,7 +142,7 @@ export function BoardView({ searchId }: { searchId: string }) {
       )}
 
       {/* Skill-Wahl (nur wenn beitreten möglich) */}
-      {userId && !alreadyIn && !full && (
+      {userId && !alreadyIn && !full && !isArchived && (
         <section className="rounded-[var(--radius-lg)] border border-line bg-surface p-4 shadow-[0_5px_0_var(--line)]">
           <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-terra">
             Wie spielst du?
@@ -216,6 +217,8 @@ export function BoardView({ searchId }: { searchId: string }) {
             <p className="flex items-center gap-2 text-sm font-extrabold text-green-deep">
               <Check className="size-4" /> Eingecheckt — viel Spaß am Tisch!
             </p>
+          ) : isArchived ? (
+            <p className="text-sm font-extrabold text-green-deep">Du warst dabei.</p>
           ) : (
             <>
               <p className="text-sm font-extrabold text-green-deep">
@@ -232,7 +235,7 @@ export function BoardView({ searchId }: { searchId: string }) {
               </button>
             </>
           )}
-          {!isHost && (
+          {!isHost && !isArchived && (
             <button
               type="button"
               onClick={() => leave.mutate()}
@@ -245,14 +248,20 @@ export function BoardView({ searchId }: { searchId: string }) {
         </motion.div>
       )}
 
-      {(join.isError || leave.isError || checkIn.isError || host.confirm.isError || host.remove.isError || host.setStatus.isError) && (
+      {(join.isError || leave.isError || checkIn.isError || host.confirm.isError || host.remove.isError || host.setStatus.isError || host.archive.isError) && (
         <div role="alert" className="rounded-[14px] border border-terra bg-surface px-4 py-3 text-sm font-semibold text-terra">
-          {[join.error, leave.error, checkIn.error, host.confirm.error, host.remove.error, host.setStatus.error].find(Boolean)?.message || "Die Änderung konnte nicht gespeichert werden."}
+          {[join.error, leave.error, checkIn.error, host.confirm.error, host.remove.error, host.setStatus.error, host.archive.error].find(Boolean)?.message || "Die Änderung konnte nicht gespeichert werden."}
           <button type="button" onClick={() => refetch()} className="ml-2 font-extrabold underline">Aktualisieren</button>
         </div>
       )}
 
-      {round.status !== "open" && (
+      {isArchived ? (
+        <div className="flex justify-center">
+          <span className="rounded-full border border-line bg-surface-2 px-3 py-1 text-xs font-black uppercase tracking-wider text-ink-soft">
+            Archiviert
+          </span>
+        </div>
+      ) : round.status !== "open" && (
         <div className="flex justify-center">
           <span className="rounded-full border border-line bg-surface-2 px-3 py-1 text-xs font-black uppercase tracking-wider text-ink-soft">
             {round.status === "full"
@@ -335,29 +344,31 @@ export function BoardView({ searchId }: { searchId: string }) {
                         <Check className="size-3.5 text-green-deep" />
                       )}
                     </span>
-                    <div className="flex gap-2">
-                      {p.status !== "confirmed" && (
+                    {!isArchived && (
+                      <div className="flex gap-2">
+                        {p.status !== "confirmed" && (
+                          <button
+                            type="button"
+                            onClick={() => host.confirm.mutate(p.user_id)}
+                            disabled={host.confirm.isPending}
+                            className="rounded-[10px] bg-green/15 px-2.5 py-1.5 text-xs font-extrabold text-green-deep"
+                          >
+                            Bestätigen
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => host.confirm.mutate(p.user_id)}
-                          disabled={host.confirm.isPending}
-                          className="rounded-[10px] bg-green/15 px-2.5 py-1.5 text-xs font-extrabold text-green-deep"
+                          onClick={() =>
+                            setRemoving(removing === p.user_id ? null : p.user_id)
+                          }
+                          className="flex items-center gap-1 rounded-[10px] border border-line bg-surface px-2.5 py-1.5 text-xs font-extrabold text-ink-soft"
                         >
-                          Bestätigen
+                          <X className="size-3.5" /> Entfernen
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setRemoving(removing === p.user_id ? null : p.user_id)
-                        }
-                        className="flex items-center gap-1 rounded-[10px] border border-line bg-surface px-2.5 py-1.5 text-xs font-extrabold text-ink-soft"
-                      >
-                        <X className="size-3.5" /> Entfernen
-                      </button>
-                    </div>
+                      </div>
+                    )}
                   </div>
-                  {removing === p.user_id && (
+                  {!isArchived && removing === p.user_id && (
                     <div className="mt-2.5 flex flex-wrap gap-1.5">
                       <span className="w-full text-[11px] font-bold text-ink-soft">
                         Grund (respektvoll, nicht öffentlich):
@@ -383,15 +394,29 @@ export function BoardView({ searchId }: { searchId: string }) {
           )}
 
           <div className="mt-3 border-t border-line pt-3">
-            {round.status === "closed" ? (
-              <button
-                type="button"
-                onClick={() => host.setStatus.mutate("open")}
-                disabled={host.setStatus.isPending}
-                className="text-sm font-extrabold text-green-deep"
-              >
-                Runde wieder öffnen
-              </button>
+            {isArchived ? (
+              <p className="text-sm font-bold text-ink-soft">
+                Runde archiviert — nur noch für dich sichtbar.
+              </p>
+            ) : round.status === "closed" ? (
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => host.setStatus.mutate("open")}
+                  disabled={host.setStatus.isPending}
+                  className="self-start text-sm font-extrabold text-green-deep"
+                >
+                  Runde wieder öffnen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => host.archive.mutate()}
+                  disabled={host.archive.isPending}
+                  className="self-start text-sm font-extrabold text-terra"
+                >
+                  {host.archive.isPending ? "Archiviere…" : "Runde archivieren"}
+                </button>
+              </div>
             ) : round.status === "cancelled" ? (
               <p className="text-sm font-bold text-ink-soft">Runde abgesagt.</p>
             ) : (

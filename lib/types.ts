@@ -132,6 +132,7 @@ export interface GameSearch {
   beginner_friendly: boolean;
   desired_level: DesiredLevel;
   status: SearchStatus;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -150,6 +151,7 @@ export interface Participant {
 
 export type ActivityType =
   | "round_created"
+  | "round_archived"
   | "round_joined"
   | "checked_in"
   | "host_confirmed"

@@ -20,3 +20,17 @@
 --    rounds, while that round's creator can still select their own rows.
 -- 8. Close a full round and reopen it as its host; it must resolve to `full`,
 --    rather than advertising an unavailable seat as `open`.
+-- 9. archive_round must succeed only for the round's creator on a `closed` round;
+--    a non-host, an `open`/`active`/`cancelled` round, and an already-archived
+--    round must each be rejected, and a second archive_round call must fail.
+-- 10. After archiving, the round and its participant rows must disappear from a
+--     public/anonymous select (game_searches, participants), while the creator's
+--     own select still returns the row with archived_at set.
+-- 11. join_round must reject an archived round even when called directly with a
+--     valid seat and open status bypassed at the row level.
+-- 12. leave_round must reject the host's own participant row ("cannot leave their
+--     own round"), while a regular participant's leave_round succeeds and their
+--     row becomes status = 'left'.
+-- 13. Once a participant's row is 'removed', 'left', or 'no_show', a repeated
+--     join_round for the same user and round must be rejected, not silently
+--     resurrect or duplicate the row.

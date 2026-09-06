@@ -102,6 +102,7 @@ export function useCreateRound(eventId: string) {
           beginner_friendly: form.beginnerFriendly,
           desired_level: form.desiredLevel,
           status: "open",
+          archived_at: null,
           created_at: "",
           updated_at: "",
           game,

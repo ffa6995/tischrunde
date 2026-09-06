@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRound, setRoundStatus } from "./rounds";
+import { archiveRound, createRound, setRoundStatus } from "./rounds";
 import { checkIn, joinRound, leaveRound } from "./participants";
 
 function rpcClient(result: { data?: unknown; error?: unknown } = {}) {
@@ -34,6 +34,16 @@ describe("round mutation RPC contracts", () => {
     await setRoundStatus(client, "r", "closed");
     expect(calls.map((call) => call.name)).toEqual([
       "join_round", "check_in_round", "leave_round", "set_round_status",
+    ]);
+  });
+
+  it("archives a round through archive_round without a creator id", async () => {
+    const { client, calls } = rpcClient();
+
+    await archiveRound(client, "r");
+
+    expect(calls).toEqual([
+      { name: "archive_round", args: { p_search_id: "r" } },
     ]);
   });
 });

@@ -153,6 +153,7 @@ function round(
     beginner_friendly: beginnerFriendly,
     desired_level: level,
     status: "open",
+    archived_at: null,
     created_at: T,
     updated_at: T,
     game: GAME_BY_ID[gameId] ?? null,

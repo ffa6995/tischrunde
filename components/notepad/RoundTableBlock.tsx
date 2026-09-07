@@ -1,8 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { blockModule } from "@/lib/notepad/registry";
 import type { RoundTableEntries } from "@/lib/notepad/blocks/roundTable";
 import type { BlockRendererProps } from "./registry";
+
+function cellKey(roundIndex: number, playerId: string): string {
+  return `${roundIndex}:${playerId}`;
+}
 
 export function RoundTableBlock({
   block,
@@ -15,8 +20,28 @@ export function RoundTableBlock({
   const mod = blockModule("round_table");
   const data = mod.parseEntries(entries, block.config, players) as RoundTableEntries;
 
+  // Zwischenstände wie "-" oder "-1", die (noch) keine gültige Zahl sind,
+  // werden hier gehalten statt sofort verworfen. Ohne das würde ein
+  // kontrollierter Input mit value="" das gerade getippte Minuszeichen sofort
+  // wieder löschen, bevor eine Ziffer folgen kann (Number("-") ist NaN).
+  const [textOverrides, setTextOverrides] = useState<Record<string, string>>({});
+
   function setCell(roundIndex: number, playerId: string, raw: string) {
-    const value = raw.trim() === "" ? null : Number(raw);
+    const key = cellKey(roundIndex, playerId);
+    const trimmed = raw.trim();
+    const value = trimmed === "" ? null : Number(raw);
+    const settled = trimmed === "" || Number.isFinite(value as number);
+
+    setTextOverrides((prev) => {
+      if (settled) {
+        if (!(key in prev)) return prev;
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      }
+      return { ...prev, [key]: raw };
+    });
+
     const rounds = data.rounds.map((row, i) =>
       i === roundIndex ? { ...row, [playerId]: Number.isFinite(value as number) ? value : null } : row,
     );
@@ -64,7 +89,7 @@ export function RoundTableBlock({
                     pattern="-?[0-9]*"
                     aria-label={`Runde ${index + 1}, ${player.label}`}
                     disabled={readOnly}
-                    value={row[player.id] ?? ""}
+                    value={textOverrides[cellKey(index, player.id)] ?? (row[player.id] ?? "")}
                     onChange={(e) => setCell(index, player.id, e.target.value)}
                     className="min-h-[44px] w-full rounded-[var(--radius-sm)] border border-line bg-surface px-2 text-right text-ink outline-none focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-green-deep disabled:opacity-70"
                   />

@@ -77,6 +77,13 @@ export function SheetPageView({ sheetId }: { sheetId: string }) {
         onEntriesChange={handleChange}
       />
 
+      <Link
+        href={`/vorlagen/uebernehmen?sheet=${sheet.id}`}
+        className="min-h-[44px] rounded-[var(--radius-md)] border border-line px-4 py-3 text-center font-black text-ink"
+      >
+        Diese Vorlage übernehmen
+      </Link>
+
       {isWriter && (
         <button
           type="button"

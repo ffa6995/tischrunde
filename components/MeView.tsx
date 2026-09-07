@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShieldCheck, Stamp } from "lucide-react";
+import { NotebookPen, ShieldCheck, Stamp } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { TradingCard } from "@/components/TradingCard";
 import { GuestPanel } from "@/components/GuestPanel";
@@ -62,6 +62,13 @@ export function MeView() {
           <section className="mx-auto w-full max-w-[330px] rounded-[var(--radius-lg)] border border-line bg-surface p-4 shadow-[0_5px_0_var(--line)]">
             <GuestPanel />
           </section>
+
+          <Link
+            href="/vorlagen"
+            className="mx-auto flex w-full max-w-[330px] items-center justify-center gap-2 rounded-[14px] border border-line bg-surface-2 px-4 py-3 text-sm font-extrabold text-ink-soft"
+          >
+            <NotebookPen className="size-4" /> Notizblöcke
+          </Link>
 
           {(profile.role === "admin" || profile.role === "moderator") && (
             <Link

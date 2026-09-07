@@ -39,21 +39,33 @@ export function useNotepadTemplates() {
 
 export function useNotepadSheet(sheetId: string) {
   const supabase = createClient();
+  const qc = useQueryClient();
   const configured = isSupabaseConfigured();
   return useQuery<NotepadSheet | null>({
     queryKey: ["notepad-sheet", sheetId],
     // Demo-Modus: das Blatt liegt nur im Cache (useCreateSheet legt es dort an).
-    queryFn: async () => (configured ? getSheet(supabase, sheetId) : null),
+    // Bei einem Refetch (z.B. Remount nach staleTime) muss der Cache-Wert
+    // zurückgegeben werden, statt ihn mit null zu überschreiben – sonst
+    // verschwindet das Blatt selbst, sobald diese Query erneut ausgeführt wird.
+    queryFn: async () =>
+      configured ? getSheet(supabase, sheetId) : (qc.getQueryData<NotepadSheet>(["notepad-sheet", sheetId]) ?? null),
     enabled: Boolean(sheetId),
   });
 }
 
 export function useRoundSheets(searchId: string | null) {
   const supabase = createClient();
+  const qc = useQueryClient();
   const configured = isSupabaseConfigured();
   return useQuery<NotepadSheet[]>({
     queryKey: ["notepad-sheets", searchId],
-    queryFn: async () => (configured && searchId ? getSheetsForRound(supabase, searchId) : []),
+    // Demo-Modus: die Liste lebt nur im Cache (useCreateSheet seedet sie).
+    // Ein Refetch darf sie nicht auf [] zurücksetzen, sonst verliert die
+    // Runden-Übersicht alle Blätter, sobald diese Query erneut läuft.
+    queryFn: async () =>
+      configured && searchId
+        ? getSheetsForRound(supabase, searchId)
+        : (qc.getQueryData<NotepadSheet[]>(["notepad-sheets", searchId]) ?? []),
     enabled: Boolean(searchId),
   });
 }

@@ -97,7 +97,7 @@ describe("notepad mutation RPC contracts", () => {
     });
   });
 
-  it("routes the remaining notepad writes through named RPCs", async () => {
+  it("routes the remaining notepad writes through named RPCs with the exact args each RPC expects", async () => {
     const { client, calls } = rpcClient({ data: "tpl-9" });
 
     await setSheetStatus(client, "sheet-1", "finished");
@@ -112,13 +112,37 @@ describe("notepad mutation RPC contracts", () => {
     });
     await deleteTemplate(client, "tpl-9");
 
-    expect(calls.map((c) => c.name)).toEqual([
-      "set_notepad_sheet_status",
-      "transfer_notepad_writer",
-      "save_notepad_template",
-      "delete_notepad_template",
+    // Exact { name, args } per call (not toMatchObject / a names-only array) so a
+    // renamed p_* key fails here. Pinning the full key set for every call also proves
+    // no extra identity field is smuggled in under some other name — asserting one
+    // literal key's absence would not, so don't weaken this back to a
+    // `not.objectContaining` check. p_to_user_id is the sole identity-shaped field
+    // allowed through: it is transferWriter's transfer *target*, validated
+    // server-side against `participants`, not a claim about the caller.
+    expect(calls).toEqual([
+      {
+        name: "set_notepad_sheet_status",
+        args: { p_sheet_id: "sheet-1", p_status: "finished" },
+      },
+      {
+        name: "transfer_notepad_writer",
+        args: { p_sheet_id: "sheet-1", p_to_user_id: "user-2" },
+      },
+      {
+        name: "save_notepad_template",
+        args: {
+          p_template_id: null,
+          p_name: "Mein Jass",
+          p_description: null,
+          p_game_id: null,
+          p_definition: { schemaVersion: 1, blocks: [] },
+          p_origin_template_id: "tpl-1",
+        },
+      },
+      {
+        name: "delete_notepad_template",
+        args: { p_template_id: "tpl-9" },
+      },
     ]);
-    expect(calls[2].args).toMatchObject({ p_template_id: null, p_origin_template_id: "tpl-1" });
-    expect(calls[2].args).toEqual(expect.not.objectContaining({ p_owner_id: expect.anything() }));
   });
 });

@@ -9,26 +9,29 @@ Ledger: `.superpowers/sdd/2026-09-06-notepad-templates/progress.md`
 - **Block catalogue and pure scoring logic** (`lib/notepad/`): a definition schema (`schema.ts`) with a
   block-module registry (`registry.ts`) for four block types — `round_table`, `jass_board`, `tally`,
   `text` — each with its own parser, entry validation, and pure `compute` function. A `skin` slot is
-  reserved on both block and definition but not yet used by any renderer. Helpers in `helpers.ts` cover
-  forking a definition for adoption, editing block lists (`addBlock`/`removeBlock`/`moveBlock`/
-  `updateBlockConfig`), and deriving a player list from round participants or free-text names.
+  reserved on both block and definition but not yet used by any renderer. Helpers in
+  `lib/notepad/authoring.ts` cover forking a definition for adoption, editing block lists
+  (`addBlock`/`removeBlock`/`moveBlock`/`updateBlockConfig`), and deriving a player list from round
+  participants or free-text names.
 - **Database schema and RPCs** (`supabase/migrations/20260906010000_notepad.sql`, mirrored in
   `supabase/schema.sql`): `notepad_templates` and `notepad_sheets` tables with row-level security,
   direct browser writes revoked, and six `SECURITY DEFINER` RPCs as the only write path —
   `create_notepad_sheet`, `save_notepad_entries`, `set_notepad_sheet_status`, `transfer_notepad_writer`,
-  `save_notepad_template`, `delete_notepad_template`. Four system templates (Runden-Zettel, Skyjo,
-  Jass-Tafel (Schieber), Strichliste) plus a Skyjo game row are seeded; a test cross-checks every seeded
-  definition's keys against each block module's own config-key set so a typo in the SQL cannot pass
-  silently (see "Deviations" below for why this took two fix rounds).
+  `save_notepad_template`, `delete_notepad_template`. The migration's seed data defines four system
+  templates (Runden-Zettel, Skyjo, Jass-Tafel (Schieber), Strichliste) plus a Skyjo game row — as SQL
+  seed rows only, not yet applied to any database (see "No SQL has been executed anywhere" below); a
+  test cross-checks every seeded definition's keys against each block module's own config-key set so a
+  typo in the SQL cannot pass silently (see "Deviations" below for why this took two fix rounds).
 - **Client data layer** (`lib/db/notepad.ts`, `lib/hooks/useNotepad*.ts`): typed wrappers for all six
   RPCs plus reads, contract tests pinning every RPC's argument list against the SQL signatures, query
   hooks with a realtime subscription on `notepad_sheets` and a full demo-mode path (no Supabase
   configured) that seeds and follows an in-memory cache instead of erasing it.
-- **UI**: four accessible block renderers (`components/notepad/blocks/`) composed by `SheetView`, the
+- **UI**: four accessible block renderers (`components/notepad/`) composed by `SheetView`, the
   sheet route `app/n/[sheetId]/` with realtime score-following for readers and a debounced,
-  revision-checked save path for the single writer (including stale-write rejection and writer
-  handover), a round entry point gating the "start a notepad" action to participants/creators, and the
-  template library, builder, and adoption flow under `app/vorlagen/`.
+  revision-checked save path for the single writer (including stale-write rejection), a round entry
+  point gating the "start a notepad" action to participants/creators, and the template library,
+  builder, and adoption flow under `app/vorlagen/`. Writer handover itself has a working RPC, db
+  wrapper, and hook mutation (see "Deliberately not done" below) but no UI consumes it.
 - **This task**: the manual acceptance SQL (`supabase/tests/notepad-manual.sql`), the `supabase/README.md`
   section documenting the new migration and the required `enable-realtime.sql` re-run, and this report.
 
@@ -95,7 +98,7 @@ Route (app)
 Result: **pass**. This is the first time the notepad feature's routes and components have been compiled
 and type-checked by Next — all thirteen tasks so far had only `vitest`/`tsc`-level and manual review
 coverage on the UI layer. The build compiled cleanly, type-checked with no errors, and generated all 12
-routes, including the three new notepad routes (`/n/[sheetId]`, `/vorlagen`, `/vorlagen/[templateId]`,
+routes, including the four new notepad routes (`/n/[sheetId]`, `/vorlagen`, `/vorlagen/[templateId]`,
 `/vorlagen/uebernehmen`).
 
 ### `git diff --check`
@@ -171,7 +174,7 @@ project owner should work through them in order and record pass/fail for each:
 - **No component, hook, or page test harness in this repo.** `vitest.config.ts` restricts its `include`
   to `lib/**/*.test.ts` running in a Node environment; there is no React Testing Library, jsdom, or
   Playwright setup wired in. Consequently:
-  - The four block renderers (`components/notepad/blocks/*`) and `SheetView` are covered by the Task 11
+  - The four block renderers (`components/notepad/*`) and `SheetView` are covered by the Task 11
     implementer/reviewer round (accessible names, read-only wiring, overflow handling) and by this
     task's `npm run build` type-check, but not by any automated render or interaction test.
   - The query hooks in `lib/hooks/useNotepad*.ts` (realtime subscription, demo-mode cache seeding,
@@ -183,6 +186,14 @@ project owner should work through them in order and record pass/fail for each:
   - Everything under `lib/notepad/` (block parsing, scoring, helpers) and the RPC parameter contracts in
     `lib/db/rpc-contract.test.ts` **are** covered by automated `vitest` tests (76 passing), since that
     code lives under `lib/**/*.test.ts`.
+- **Sheet players are frozen at creation.** `create_notepad_sheet` writes `notepad_sheets.players` once
+  and there is no RPC or UI path to add, remove, or rename a player afterwards. The design spec says a
+  round-bound sheet's players "stay editable" because someone at the table may not use the app; that is
+  not true today, and this wave does not add it.
+- **Writer handover has no UI.** `transfer_notepad_writer`, its `lib/db/notepad.ts` wrapper, and the
+  `handOver` mutation in `useNotepadActions` exist and are covered by the RPC contract test, but
+  `SheetPageView` never calls `handOver` — there is no control anywhere in the app for the current
+  writer to hand off to another participant. This wave does not add one.
 - **No SQL has been executed anywhere.** `supabase/migrations/20260906010000_notepad.sql`, the
   `supabase/schema.sql` mirror, and `supabase/tests/notepad-manual.sql` have only been read and
   reasoned about against each other; there is no local Postgres/Supabase instance in this environment.

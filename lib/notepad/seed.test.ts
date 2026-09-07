@@ -14,18 +14,54 @@ interface RawBlock {
 }
 
 /**
- * Zieht Template-Id und '{...}'::jsonb-Definition aus jeder Seed-Zeile.
- * Die Id wird bewusst mitextrahiert (statt die Templates z. B. über einen
- * Config-Wert wie `limit === 100` zu unterscheiden) — Adressierung über einen
- * fachlich unterscheidenden Wert ist genau die Fragilität, die dieser Test
- * beheben soll. Das koppelt diese Funktion an die Zeilenform in der Migration
- * `('<vier feste Ids ...440[1-4]>', ... , '{"schemaVersion":...}'::jsonb)`;
- * ändert sich dort das Format, muss dieser Test mitgepflegt werden.
+ * Grenzt den `insert into notepad_templates (...) values ... on conflict (id)
+ * do nothing;`-Block der Migration ein, unabhängig von der Anzahl seiner Zeilen.
+ */
+function seedValuesBlock(): string {
+  // Die Spaltenliste beginnt bewusst mit "id," verankert: `save_notepad_template`
+  // enthält weiter oben in derselben Datei ein zweites, dynamisches
+  // `insert into notepad_templates (...) values` (ohne `id`-Spalte, die Id kommt
+  // per `returning id into v_id`) — ohne diesen Anker würde das nicht-gierige
+  // Matching am FALSCHEN (früheren) `on conflict (id) do nothing;` enden, das zur
+  // `games`-Seed-Zeile gehört, nicht zu den Notizblock-Vorlagen.
+  const match = sql.match(
+    /insert into notepad_templates \(id,[^)]*\) values\s*([\s\S]*?)\non conflict \(id\) do nothing;/,
+  );
+  if (!match) {
+    throw new Error("No `insert into notepad_templates (id, ...) values` block found in the migration");
+  }
+  return match[1];
+}
+
+/**
+ * Zieht Template-Id und '{...}'::jsonb-Definition aus JEDER Seed-Zeile im
+ * values-Block — die Id selbst ist eine generische UUID, keine feste Liste
+ * bekannter Ids. Ein hartcodierter Id-Bereich (z. B. nur `...440[1-4]`) wäre
+ * blind für eine später hinzugefügte fünfte Vorlage: die Zeile würde von
+ * keinem Regex erfasst, die Zählung bliebe zufällig richtig, und die neue
+ * Definition bekäme keine Prüfung. Adressierung über einen fachlich
+ * unterscheidenden Wert (z. B. `limit === 100`) ist genau die Fragilität, die
+ * dieser Test vermeiden soll. Das koppelt diese Funktion an die Zeilenform
+ * `('<uuid>', ... , '{"schemaVersion":...}'::jsonb)`; ändert sich dort das
+ * Format, muss dieser Test mitgepflegt werden.
  */
 function seededRows(): Array<{ id: string; definition: { blocks: RawBlock[] } }> {
-  const pattern =
-    /\('(44444444-4444-4444-4444-44444444440[1-4])',[\s\S]*?'(\{"schemaVersion".*?\})'::jsonb\)/g;
-  return [...sql.matchAll(pattern)].map((m) => ({ id: m[1], definition: JSON.parse(m[2]) }));
+  const pattern = /\('([0-9a-f-]{36})',[\s\S]*?'(\{"schemaVersion".*?\})'::jsonb\)/g;
+  return [...seedValuesBlock().matchAll(pattern)].map((m) => ({ id: m[1], definition: JSON.parse(m[2]) }));
+}
+
+/**
+ * Zählt die Zeilen im values-Block unabhängig von `seededRows()`: jede Zeile
+ * beginnt mit einer in Anführungszeichen gesetzten UUID als erstem
+ * Spaltenwert. Diese Zählung teilt sich absichtlich KEINE Logik mit
+ * `seededRows()` (die zusätzlich bis zu einer parsebaren jsonb-Definition
+ * matchen muss) — nur so ist der Vergleich der beiden Zählungen unten ein
+ * echter Gegen-Check und keine Tautologie: würde `seededRows()` eine Zeile
+ * verschlucken (z. B. weil ihr jsonb nicht zum Muster passt), fiele das hier auf.
+ */
+function countSeedRowsInSql(): number {
+  const rowStarts = seedValuesBlock().match(/\(\s*'[0-9a-f-]{36}',/g) ?? [];
+  return rowStarts.length;
 }
 
 function parsedBlocks(id: string) {
@@ -35,8 +71,16 @@ function parsedBlocks(id: string) {
 }
 
 describe("seeded system templates", () => {
-  it("seeds exactly the four system templates", () => {
-    expect(seededRows()).toHaveLength(4);
+  it("seeds at least one system template", () => {
+    expect(countSeedRowsInSql()).toBeGreaterThan(0);
+  });
+
+  it("extracts every seeded row from the SQL — none silently dropped", () => {
+    // Zählt den values-Block auf zwei unabhängigen Wegen (siehe countSeedRowsInSql
+    // und seededRows) und vergleicht; die erwartete Zahl steht bewusst nicht als
+    // Literal im Test, sondern wird aus der Migration selbst abgeleitet, damit ein
+    // fünftes (oder sechstes, …) Seed-Template automatisch mitgeprüft wird.
+    expect(seededRows()).toHaveLength(countSeedRowsInSql());
   });
 
   it("parses every seeded definition through the block registry", () => {

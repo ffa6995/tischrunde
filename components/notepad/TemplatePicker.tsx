@@ -21,8 +21,15 @@ function sortTemplates(templates: NotepadTemplate[], gameId: string | null): Not
 }
 
 export function TemplatePicker({ gameId, onPick, pendingId }: TemplatePickerProps) {
-  const { data: templates, isLoading } = useNotepadTemplates();
+  const { data: templates, isLoading, isError, error } = useNotepadTemplates();
   if (isLoading) return <p className="text-sm text-ink-soft">Vorlagen werden geladen …</p>;
+  if (isError) {
+    return (
+      <p role="alert" className="text-sm text-ink-soft">
+        Vorlagen konnten nicht geladen werden: {error.message}
+      </p>
+    );
+  }
   if (!templates || templates.length === 0) {
     return <p className="text-sm text-ink-soft">Noch keine Vorlagen vorhanden.</p>;
   }

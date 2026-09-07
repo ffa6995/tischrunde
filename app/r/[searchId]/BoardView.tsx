@@ -352,39 +352,41 @@ export function BoardView({ searchId }: { searchId: string }) {
           <p className="mt-1 text-sm text-ink-soft">Noch kein Blatt für diese Runde.</p>
         )}
 
-        {!pickerOpen ? (
-          <button
-            type="button"
-            onClick={() => setPickerOpen(true)}
-            className="mt-3 min-h-[44px] w-full rounded-[var(--radius-md)] border border-line px-3 font-black text-ink"
-          >
-            Punkte mitschreiben
-          </button>
-        ) : (
-          <div className="mt-3">
-            <TemplatePicker
-              gameId={round?.game_id ?? null}
-              pendingId={createSheet.isPending ? "pending" : null}
-              onPick={(template) =>
-                createSheet.mutate(
-                  {
-                    searchId,
-                    templateId: template.id,
-                    definition: template.definition,
-                    players: playersFromParticipants(round?.participants ?? []),
-                    title: template.name,
-                  },
-                  { onSuccess: (sheetId) => router.push(`/n/${sheetId}`) },
-                )
-              }
-            />
-            {createSheet.isError && (
-              <p role="alert" className="mt-2 text-sm text-ink">
-                {createSheet.error.message}
-              </p>
-            )}
-          </div>
-        )}
+        {/* Nur wer an diesem Tisch sitzt (oder ihn eröffnet hat) kann ein Blatt anlegen — die RPC lehnt alle anderen ohnehin ab. */}
+        {(isHost || alreadyIn) &&
+          (!pickerOpen ? (
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="mt-3 min-h-[44px] w-full rounded-[var(--radius-md)] border border-line px-3 font-black text-ink"
+            >
+              Punkte mitschreiben
+            </button>
+          ) : (
+            <div className="mt-3">
+              <TemplatePicker
+                gameId={round?.game_id ?? null}
+                pendingId={createSheet.isPending ? "pending" : null}
+                onPick={(template) =>
+                  createSheet.mutate(
+                    {
+                      searchId,
+                      templateId: template.id,
+                      definition: template.definition,
+                      players: playersFromParticipants(round?.participants ?? []),
+                      title: template.name,
+                    },
+                    { onSuccess: (sheetId) => router.push(`/n/${sheetId}`) },
+                  )
+                }
+              />
+              {createSheet.isError && (
+                <p role="alert" className="mt-2 text-sm text-ink">
+                  {createSheet.error.message}
+                </p>
+              )}
+            </div>
+          ))}
       </section>
 
       {isHost && (

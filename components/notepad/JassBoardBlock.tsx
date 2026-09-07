@@ -61,65 +61,67 @@ export function JassBoardBlock({ block, players, entries, result, readOnly, onCh
         ))}
       </div>
 
-      <table className="mt-3 w-full border-collapse text-sm">
-        <caption className="sr-only">Punkte je Spiel und Team</caption>
-        <thead>
-          <tr>
-            <th scope="col" className="p-2 text-left text-xs font-black uppercase text-ink-soft">Spiel</th>
-            {teams.map((team) => (
-              <th key={team.id} scope="col" className="p-2 text-right text-xs font-black text-ink">
-                {team.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.rows.map((row, index) => (
-            <tr key={index} className="border-t border-line">
-              <th scope="row" className="p-2 text-left text-xs font-bold text-ink-soft">{index + 1}</th>
+      <div className="overflow-x-auto">
+        <table className="mt-3 w-full border-collapse text-sm">
+          <caption className="sr-only">Punkte je Spiel und Team</caption>
+          <thead>
+            <tr>
+              <th scope="col" className="p-2 text-left text-xs font-black uppercase text-ink-soft">Spiel</th>
               {teams.map((team) => (
-                <td key={team.id} className="p-1">
-                  <div className="flex items-center justify-end gap-1">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      aria-label={`Spiel ${index + 1}, ${team.label}, Punkte`}
-                      disabled={readOnly}
-                      value={(row[team.points as keyof typeof row] as number | null) ?? ""}
-                      onChange={(e) => setValue(index, team.points, e.target.value)}
-                      className="min-h-[44px] w-16 rounded-[var(--radius-sm)] border border-line bg-surface px-2 text-right text-ink outline-none focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-green-deep"
-                    />
-                    {config.weisEnabled && (
+                <th key={team.id} scope="col" className="p-2 text-right text-xs font-black text-ink">
+                  {team.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.rows.map((row, index) => (
+              <tr key={index} className="border-t border-line">
+                <th scope="row" className="p-2 text-left text-xs font-bold text-ink-soft">{index + 1}</th>
+                {teams.map((team) => (
+                  <td key={team.id} className="p-1">
+                    <div className="flex items-center justify-end gap-1">
                       <input
                         type="text"
                         inputMode="numeric"
-                        aria-label={`Spiel ${index + 1}, ${team.label}, Weis`}
+                        aria-label={`Spiel ${index + 1}, ${team.label}, Punkte`}
                         disabled={readOnly}
-                        value={(row[team.weis as keyof typeof row] as number | null) ?? ""}
-                        onChange={(e) => setValue(index, team.weis, e.target.value)}
-                        placeholder="Weis"
-                        className="min-h-[44px] w-14 rounded-[var(--radius-sm)] border border-dashed border-line bg-surface px-2 text-right text-ink-soft"
+                        value={(row[team.points as keyof typeof row] as number | null) ?? ""}
+                        onChange={(e) => setValue(index, team.points, e.target.value)}
+                        className="min-h-[44px] w-16 rounded-[var(--radius-sm)] border border-line bg-surface px-2 text-right text-ink outline-none focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-green-deep disabled:opacity-70"
                       />
-                    )}
-                    {config.matchBonus > 0 && (
-                      <label className="flex min-h-[44px] items-center gap-1 text-xs text-ink-soft">
+                      {config.weisEnabled && (
                         <input
-                          type="checkbox"
-                          aria-label={`Spiel ${index + 1}, ${team.label}, Match`}
+                          type="text"
+                          inputMode="numeric"
+                          aria-label={`Spiel ${index + 1}, ${team.label}, Weis`}
                           disabled={readOnly}
-                          checked={Boolean(row[team.match as keyof typeof row])}
-                          onChange={(e) => setValue(index, team.match, e.target.checked)}
+                          value={(row[team.weis as keyof typeof row] as number | null) ?? ""}
+                          onChange={(e) => setValue(index, team.weis, e.target.value)}
+                          placeholder="Weis"
+                          className="min-h-[44px] w-14 rounded-[var(--radius-sm)] border border-dashed border-line bg-surface px-2 text-right text-ink-soft disabled:opacity-70"
                         />
-                        Match
-                      </label>
-                    )}
-                  </div>
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                      )}
+                      {config.matchBonus > 0 && (
+                        <label className="flex min-h-[44px] items-center gap-1 text-xs text-ink-soft">
+                          <input
+                            type="checkbox"
+                            aria-label={`Spiel ${index + 1}, ${team.label}, Match`}
+                            disabled={readOnly}
+                            checked={Boolean(row[team.match as keyof typeof row])}
+                            onChange={(e) => setValue(index, team.match, e.target.checked)}
+                          />
+                          Match
+                        </label>
+                      )}
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {result.targetReached && (
         <p className="mt-2 rounded-[var(--radius-sm)] border border-line bg-surface-2 px-3 py-2 text-sm font-bold text-ink">

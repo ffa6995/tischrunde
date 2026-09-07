@@ -72,7 +72,7 @@ export function useCreateSheet() {
         // für den Ersteller stimmt; "demo-user" ist nur der letzte Rückfall.
         const ownerId =
           qc.getQueryData<SessionState>(["session"])?.user?.id ?? "demo-user";
-        qc.setQueryData<NotepadSheet>(["notepad-sheet", id], {
+        const sheet: NotepadSheet = {
           id,
           title: input.title,
           search_id: input.searchId,
@@ -86,23 +86,42 @@ export function useCreateSheet() {
           status: "active",
           created_at: now,
           updated_at: now,
-        });
+        };
+        qc.setQueryData<NotepadSheet>(["notepad-sheet", id], sheet);
+        // Demo-Modus: die Runde-Liste lebt nur im Cache, hier mitschreiben,
+        // sonst bleibt das neue Blatt für die Runden-Übersicht unsichtbar.
+        if (input.searchId) {
+          qc.setQueryData<NotepadSheet[]>(["notepad-sheets", input.searchId], (list) => [
+            ...(list ?? []),
+            sheet,
+          ]);
+        }
         return id;
       }
       return createSheet(supabase, input);
     },
     onSuccess: (_id, input) => {
-      if (input.searchId) qc.invalidateQueries({ queryKey: ["notepad-sheets", input.searchId] });
+      // Im Demo-Modus wurde die Liste gerade oben geseedet; ein Invalidate
+      // hier würde sie sofort mit dem Demo-Fallback ([]) überschreiben.
+      if (configured && input.searchId) {
+        qc.invalidateQueries({ queryKey: ["notepad-sheets", input.searchId] });
+      }
     },
   });
 }
 
-export function useNotepadActions(sheetId: string) {
+export function useNotepadActions(sheetId: string, searchId?: string | null) {
   const supabase = createClient();
   const qc = useQueryClient();
   const configured = isSupabaseConfigured();
 
   const save = useMutation<number, Error, Record<string, unknown>>({
+    // Serialisiert Saves pro Blatt: TanStack Query führt Mutationen mit
+    // gleicher scope.id nacheinander aus, nie parallel. Ohne das würde ein
+    // zweiter debounced Save starten, während der erste noch unterwegs ist,
+    // beide läsen dieselbe (alte) Revision, und der zweite würde vom Server
+    // fälschlich als Konflikt abgelehnt, obwohl niemand sonst geschrieben hat.
+    scope: { id: `notepad-save-${sheetId}` },
     mutationFn: async (entries) => {
       const current = qc.getQueryData<NotepadSheet | null>(["notepad-sheet", sheetId]);
       const revision = current?.revision ?? 0;
@@ -126,7 +145,12 @@ export function useNotepadActions(sheetId: string) {
       }
       await setSheetStatus(supabase, sheetId, status);
     },
-    onSuccess: () => configured && qc.invalidateQueries({ queryKey: ["notepad-sheet", sheetId] }),
+    onSuccess: () => {
+      if (!configured) return;
+      qc.invalidateQueries({ queryKey: ["notepad-sheet", sheetId] });
+      // Der Status-Badge in der Runden-Liste hängt an dieser Query mit dran.
+      if (searchId) qc.invalidateQueries({ queryKey: ["notepad-sheets", searchId] });
+    },
   });
 
   const handOver = useMutation<void, Error, string>({
@@ -137,7 +161,11 @@ export function useNotepadActions(sheetId: string) {
       }
       await transferWriter(supabase, sheetId, toUserId);
     },
-    onSuccess: () => configured && qc.invalidateQueries({ queryKey: ["notepad-sheet", sheetId] }),
+    onSuccess: () => {
+      if (!configured) return;
+      qc.invalidateQueries({ queryKey: ["notepad-sheet", sheetId] });
+      if (searchId) qc.invalidateQueries({ queryKey: ["notepad-sheets", searchId] });
+    },
   });
 
   return {

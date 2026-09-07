@@ -8,6 +8,7 @@ import {
   playersFromParticipants,
   removeBlock,
   updateBlockConfig,
+  updateBlockTitle,
 } from "./authoring";
 import type { ParticipantWithProfile } from "@/lib/types";
 
@@ -76,6 +77,27 @@ describe("definition editing", () => {
     const patched = updateBlockConfig(def, "id-1", { scoreDirection: "lowest_wins", limit: 100 });
     expect(patched.blocks[0].config).toMatchObject({ scoreDirection: "lowest_wins", limit: 100 });
     expect(def.blocks[0].config).toMatchObject({ scoreDirection: "highest_wins" });
+  });
+
+  it("sets a block's title", () => {
+    const def = emptyDefinition(ids());
+    const patched = updateBlockTitle(def, "id-1", "Punkte Runde 1");
+    expect(patched.blocks[0].title).toBe("Punkte Runde 1");
+    expect(def.blocks[0].title).toBeUndefined();
+  });
+
+  it("clears a title back to undefined instead of storing an empty string", () => {
+    const withTitle = updateBlockTitle(emptyDefinition(ids()), "id-1", "Punkte");
+    const cleared = updateBlockTitle(withTitle, "id-1", "   ");
+    expect(cleared.blocks[0].title).toBeUndefined();
+    expect("title" in cleared.blocks[0] && cleared.blocks[0].title === "").toBe(false);
+  });
+
+  it("only touches the targeted block's title", () => {
+    const two = addBlock(emptyDefinition(ids()), "text", () => "note");
+    const patched = updateBlockTitle(two, "note", "Notizen");
+    expect(patched.blocks[0].title).toBeUndefined();
+    expect(patched.blocks[1].title).toBe("Notizen");
   });
 });
 

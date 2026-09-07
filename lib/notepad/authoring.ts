@@ -87,6 +87,26 @@ export function updateBlockConfig(
   };
 }
 
+/**
+ * Setzt den Titel eines Blocks. Ein leerer (oder nur aus Leerzeichen
+ * bestehender) Titel wird zurück auf `undefined` gesetzt statt als leerer
+ * String gespeichert zu werden — sonst würde `SheetView` eine leere
+ * Überschrift rendern statt gar keine.
+ */
+export function updateBlockTitle(
+  definition: SheetDefinition,
+  blockId: string,
+  title: string,
+): SheetDefinition {
+  const cleared = title.trim() === "";
+  return {
+    ...definition,
+    blocks: definition.blocks.map((block) =>
+      block.id === blockId ? { ...block, title: cleared ? undefined : title } : block,
+    ),
+  };
+}
+
 const INACTIVE = new Set(["left", "removed", "no_show"]);
 
 export function playersFromParticipants(participants: ParticipantWithProfile[]): SheetPlayer[] {

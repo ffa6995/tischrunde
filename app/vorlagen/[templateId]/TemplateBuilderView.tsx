@@ -13,6 +13,7 @@ import {
   moveBlock,
   removeBlock,
   updateBlockConfig,
+  updateBlockTitle,
 } from "@/lib/notepad/authoring";
 import { BLOCK_MODULES, parseDefinition } from "@/lib/notepad/registry";
 import type { BlockType, SheetDefinition, SheetPlayer } from "@/lib/notepad/schema";
@@ -174,6 +175,21 @@ function TemplateBuilderForm({
                   ×
                 </button>
               </div>
+            </div>
+            <div className="mt-2 flex flex-col gap-1">
+              <label
+                htmlFor={`${block.id}-title`}
+                className="text-xs font-black uppercase tracking-wide text-ink-soft"
+              >
+                Titel (optional)
+              </label>
+              <input
+                id={`${block.id}-title`}
+                type="text"
+                value={block.title ?? ""}
+                onChange={(e) => setDefinition(updateBlockTitle(definition, block.id, e.target.value))}
+                className="min-h-[44px] rounded-[var(--radius-sm)] border border-line bg-surface px-3 text-ink"
+              />
             </div>
             <div className="mt-2">
               <ConfigFields

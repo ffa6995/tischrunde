@@ -21,18 +21,25 @@ export function ConfigFields({ fields, values, idPrefix, onChange }: ConfigField
         const value = values[field.key];
         return (
           <div key={field.key} className="flex flex-col gap-1">
-            <label htmlFor={id} className="text-xs font-black uppercase tracking-wide text-ink-soft">
-              {field.label}
-            </label>
+            {field.kind !== "boolean" && (
+              <label htmlFor={id} className="text-xs font-black uppercase tracking-wide text-ink-soft">
+                {field.label}
+              </label>
+            )}
 
             {field.kind === "boolean" && (
-              <input
-                id={id}
-                type="checkbox"
-                checked={value === true}
-                onChange={(e) => onChange({ [field.key]: e.target.checked })}
-                className="size-6"
-              />
+              <div className="flex min-h-[44px] items-center gap-2">
+                <input
+                  id={id}
+                  type="checkbox"
+                  checked={value === true}
+                  onChange={(e) => onChange({ [field.key]: e.target.checked })}
+                  className="size-6"
+                />
+                <label htmlFor={id} className="text-xs font-black uppercase tracking-wide text-ink-soft">
+                  {field.label}
+                </label>
+              </div>
             )}
 
             {field.kind === "number" && (

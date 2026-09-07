@@ -32,12 +32,25 @@ const PREVIEW_PLAYERS: SheetPlayer[] = [
  * Rendern liest, ein späteres Eintreffen der Vorlage aber nicht nachzieht.
  */
 export function TemplateBuilderView({ templateId }: { templateId: string }) {
-  const { data: templates, isLoading } = useNotepadTemplates();
+  const { data: templates, isLoading, isError, error } = useNotepadTemplates();
   const isNew = templateId === "neu";
   const source = templates?.find((t) => t.id === templateId) ?? null;
 
   if (!isNew && isLoading) {
     return <p className="p-4 text-ink-soft">Vorlage wird geladen …</p>;
+  }
+
+  if (!isNew && isError) {
+    return (
+      <div className="p-4">
+        <p role="alert" className="text-ink">
+          Vorlagen konnten nicht geladen werden: {error.message}
+        </p>
+        <Link href="/vorlagen" className="mt-2 inline-block font-black text-green-deep">
+          Zu den Vorlagen
+        </Link>
+      </div>
+    );
   }
 
   if (!isNew && !source) {

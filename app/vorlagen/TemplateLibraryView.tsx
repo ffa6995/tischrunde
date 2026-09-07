@@ -8,7 +8,7 @@ import { playersFromNames } from "@/lib/notepad/authoring";
 
 export function TemplateLibraryView() {
   const router = useRouter();
-  const { data: templates, isLoading } = useNotepadTemplates();
+  const { data: templates, isLoading, isError, error } = useNotepadTemplates();
   const createSheet = useCreateSheet();
   const removeTemplate = useDeleteTemplate();
   const [names, setNames] = useState("");
@@ -33,6 +33,16 @@ export function TemplateLibraryView() {
       </Link>
 
       {isLoading && <p className="text-sm text-ink-soft">Vorlagen werden geladen …</p>}
+
+      {isError && (
+        <p role="alert" className="text-sm text-ink-soft">
+          Vorlagen konnten nicht geladen werden: {error.message}
+        </p>
+      )}
+
+      {!isLoading && !isError && (templates ?? []).length === 0 && (
+        <p className="text-sm text-ink-soft">Noch keine Vorlagen vorhanden.</p>
+      )}
 
       <ul className="flex flex-col gap-2">
         {(templates ?? []).map((template) => (

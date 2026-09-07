@@ -10,8 +10,13 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
  * der Runde und invalidiert die Queries, sobald jemand bei-/austritt oder
  * eincheckt. Nur im Real-Modus; im Demo-Modus passiert nichts.
  *
- * Voraussetzung: Tabelle `participants` ist in der supabase_realtime-Publication
- * (siehe supabase/enable-realtime.sql).
+ * Abonniert zusätzlich `notepad_sheets` der Runde, sonst bleibt "Punkte
+ * mitschreiben" für Mitleser unsichtbar, bis sie die Seite neu laden: die
+ * Blatt-Liste (`["notepad-sheets", searchId]`) hat sonst keinen Live-Pfad
+ * (`staleTime: 30_000`, kein Fokus-Refetch).
+ *
+ * Voraussetzung: Tabellen `participants`, `game_searches` und `notepad_sheets`
+ * sind in der supabase_realtime-Publication (siehe supabase/enable-realtime.sql).
  */
 export function useRealtimeRound(searchId: string, eventId: string | null) {
   const qc = useQueryClient();
@@ -42,6 +47,16 @@ export function useRealtimeRound(searchId: string, eventId: string | null) {
           qc.invalidateQueries({ queryKey: ["round", searchId] });
           if (eventId) qc.invalidateQueries({ queryKey: ["rounds", eventId] });
         },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notepad_sheets",
+          filter: `search_id=eq.${searchId}`,
+        },
+        () => qc.invalidateQueries({ queryKey: ["notepad-sheets", searchId] }),
       )
       .subscribe();
 

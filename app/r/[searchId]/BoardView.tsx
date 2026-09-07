@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { AlertTriangle, Check, Info, QrCode, ShieldCheck, X } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
@@ -10,12 +12,15 @@ import { ShareButton } from "@/components/ShareButton";
 import { QRCodeBlock } from "@/components/QRCodeBlock";
 import { GuestPanel } from "@/components/GuestPanel";
 import { DemoBanner } from "@/components/DemoBanner";
+import { TemplatePicker } from "@/components/notepad/TemplatePicker";
 import { useRound, useJoinRound, useLeaveRound } from "@/lib/hooks/useRounds";
 import { useCheckIn } from "@/lib/hooks/useActivity";
 import { useEvent } from "@/lib/hooks/useEvents";
 import { useRealtimeRound } from "@/lib/hooks/useRealtimeRound";
 import { useHostActions } from "@/lib/hooks/useHostActions";
 import { useSession } from "@/lib/hooks/useSession";
+import { useCreateSheet, useRoundSheets } from "@/lib/hooks/useNotepad";
+import { playersFromParticipants } from "@/lib/notepad/authoring";
 import { isGameAvailable } from "@/lib/availability";
 import {
   boardTheme,
@@ -50,12 +55,16 @@ export function BoardView({ searchId }: { searchId: string }) {
   useRealtimeRound(searchId, round?.event_id ?? null);
   const host = useHostActions(searchId, round?.event_id ?? null);
   const leave = useLeaveRound(searchId, round?.event_id ?? null);
+  const router = useRouter();
+  const createSheet = useCreateSheet();
+  const { data: sheets } = useRoundSheets(searchId);
 
   const [skill, setSkill] = useState<SkillLevel>("learning");
   const [bringsGame, setBringsGame] = useState(false);
   const [bringsNote, setBringsNote] = useState("");
   const [removing, setRemoving] = useState<string | null>(null);
   const [closeWarn, setCloseWarn] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -319,6 +328,64 @@ export function BoardView({ searchId }: { searchId: string }) {
           Lernt gern
         </span>
       </div>
+
+      <section className="rounded-[var(--radius-lg)] border border-line bg-surface p-4 shadow-[0_5px_0_var(--line)]">
+        <h2 className="font-display text-lg font-black text-ink">Notizblock</h2>
+
+        {sheets && sheets.length > 0 ? (
+          <ul className="mt-2 flex flex-col gap-2">
+            {sheets.map((sheet) => (
+              <li key={sheet.id}>
+                <Link
+                  href={`/n/${sheet.id}`}
+                  className="flex min-h-[44px] items-center justify-between rounded-[var(--radius-md)] border border-line px-3 font-black text-ink"
+                >
+                  {sheet.title ?? "Punkte"}
+                  <span className="text-xs font-bold text-ink-soft">
+                    {sheet.status === "finished" ? "abgeschlossen" : "läuft"}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-1 text-sm text-ink-soft">Noch kein Blatt für diese Runde.</p>
+        )}
+
+        {!pickerOpen ? (
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="mt-3 min-h-[44px] w-full rounded-[var(--radius-md)] border border-line px-3 font-black text-ink"
+          >
+            Punkte mitschreiben
+          </button>
+        ) : (
+          <div className="mt-3">
+            <TemplatePicker
+              gameId={round?.game_id ?? null}
+              pendingId={createSheet.isPending ? "pending" : null}
+              onPick={(template) =>
+                createSheet.mutate(
+                  {
+                    searchId,
+                    templateId: template.id,
+                    definition: template.definition,
+                    players: playersFromParticipants(round?.participants ?? []),
+                    title: template.name,
+                  },
+                  { onSuccess: (sheetId) => router.push(`/n/${sheetId}`) },
+                )
+              }
+            />
+            {createSheet.isError && (
+              <p role="alert" className="mt-2 text-sm text-ink">
+                {createSheet.error.message}
+              </p>
+            )}
+          </div>
+        )}
+      </section>
 
       {isHost && (
         <section className="rounded-[var(--radius-lg)] border border-line bg-surface p-4 shadow-[0_5px_0_var(--line)]">

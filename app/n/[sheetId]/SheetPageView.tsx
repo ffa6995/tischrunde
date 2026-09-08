@@ -11,10 +11,15 @@ import type { SheetPlayer } from "@/lib/notepad/schema";
 /** Speichert gebündelt, damit nicht jeder Tastendruck eine RPC auslöst. */
 const SAVE_DEBOUNCE_MS = 600;
 
+/** Gleicher Fallback wie `defaultId()` in lib/notepad/authoring.ts (dort nicht exportiert). */
+function newPlayerId(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `p-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export function SheetPageView({ sheetId }: { sheetId: string }) {
   const { data: sheet, isLoading } = useNotepadSheet(sheetId);
   const session = useSession();
-  const { save, finish, reopen, setStatus } = useNotepadActions(sheetId, sheet?.search_id ?? null);
+  const { save, finish, reopen, setStatus, updatePlayers } = useNotepadActions(sheetId, sheet?.search_id ?? null);
   useRealtimeSheet(sheetId);
 
   // Nur der Schreiber hält einen lokalen Entwurf (für sofortiges Feedback
@@ -114,6 +119,13 @@ export function SheetPageView({ sheetId }: { sheetId: string }) {
     };
   }, []);
 
+  // Spieler-Verwaltung: komplett getrennter lokaler State von draft/baseRevision
+  // oben (der gehört zu `entries`). `playersDraft` ist der noch nicht
+  // gespeicherte Bearbeitungsstand; `null` heisst "kein ausstehender
+  // Bearbeitungsstand", die Anzeige folgt dann direkt sheet.players.
+  const [playersDraft, setPlayersDraft] = useState<SheetPlayer[] | null>(null);
+  const [newPlayerName, setNewPlayerName] = useState("");
+
   if (isLoading) return <p className="p-4 text-ink-soft">Notizblock wird geladen …</p>;
   if (!sheet) {
     return (
@@ -136,6 +148,24 @@ export function SheetPageView({ sheetId }: { sheetId: string }) {
 
   const readOnly = !isWriter || sheet.status === "finished" || hasConflict;
   const entries = isWriter && draft !== null ? draft : sheet.entries;
+
+  // Nur der Schreiber darf die Spielerliste verändern, und auch der nicht bei
+  // einem abgeschlossenen Blatt oder ungelöstem Konflikt — dieselbe Regel wie
+  // `readOnly` oben, die RPC lehnt ein abgeschlossenes Blatt serverseitig
+  // ohnehin ab, aber die UI soll die Kontrolle erst gar nicht anbieten.
+  const canManagePlayers = isWriter && !readOnly;
+  const players = (playersDraft ?? (sheet.players as SheetPlayer[]));
+  const trimmedPlayers = players.map((p) => ({ ...p, label: p.label.trim() }));
+  const hasBlankLabel = trimmedPlayers.some((p) => p.label.length === 0);
+  const hasDuplicateId = new Set(trimmedPlayers.map((p) => p.id)).size !== trimmedPlayers.length;
+  const playersValidationError = trimmedPlayers.length === 0
+    ? "Mindestens ein:e Spieler:in wird benötigt."
+    : hasBlankLabel
+      ? "Namen dürfen nicht leer sein."
+      : hasDuplicateId
+        ? "Spieler-IDs müssen eindeutig sein."
+        : null;
+  const playersDirty = playersDraft !== null;
 
   function handleChange(next: Record<string, unknown>) {
     setDraft(next);
@@ -172,6 +202,35 @@ export function SheetPageView({ sheetId }: { sheetId: string }) {
     pendingRef.current = null;
     setBaseRevision(sheet.revision);
     setDraft(null);
+  }
+
+  function renamePlayer(playerId: string, label: string) {
+    setPlayersDraft(players.map((p) => (p.id === playerId ? { ...p, label } : p)));
+  }
+
+  function removePlayer(playerId: string) {
+    // Die letzte verbleibende Zeile lässt sich nicht entfernen (Button ist in
+    // diesem Fall deaktiviert) — eine leere Spielerliste ergibt keinen Sinn
+    // und würde ohnehin von der RPC abgelehnt.
+    if (players.length <= 1) return;
+    setPlayersDraft(players.filter((p) => p.id !== playerId));
+  }
+
+  function addPlayer() {
+    const label = newPlayerName.trim();
+    if (label.length === 0) return;
+    setPlayersDraft([...players, { id: newPlayerId(), label, participant_id: null }]);
+    setNewPlayerName("");
+  }
+
+  function discardPlayersEdit() {
+    setPlayersDraft(null);
+    setNewPlayerName("");
+  }
+
+  function savePlayers() {
+    if (playersValidationError) return;
+    updatePlayers.mutate(trimmedPlayers, { onSuccess: () => setPlayersDraft(null) });
   }
 
   async function handleFinish() {
@@ -244,6 +303,107 @@ export function SheetPageView({ sheetId }: { sheetId: string }) {
         readOnly={readOnly}
         onEntriesChange={handleChange}
       />
+
+      {canManagePlayers && (
+        <section className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-line bg-surface p-3">
+          <h2 className="font-black text-ink">Spieler verwalten</h2>
+
+          <ul className="flex flex-col gap-2">
+            {players.map((player, index) => {
+              const inputId = `player-name-${player.id}`;
+              return (
+                <li key={player.id} className="flex items-center gap-2">
+                  <label htmlFor={inputId} className="sr-only">
+                    Name von Spieler {index + 1}
+                  </label>
+                  <input
+                    id={inputId}
+                    type="text"
+                    value={player.label}
+                    onChange={(e) => renamePlayer(player.id, e.target.value)}
+                    className="min-h-[44px] flex-1 rounded-[var(--radius-sm)] border border-line bg-surface px-3 text-ink outline-none focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-green-deep"
+                  />
+                  <button
+                    type="button"
+                    aria-label={`${player.label.trim() || "Spieler"} entfernen`}
+                    disabled={players.length <= 1}
+                    onClick={() => removePlayer(player.id)}
+                    className="min-h-[44px] min-w-[44px] rounded-[var(--radius-sm)] text-ink-soft hover:text-ink disabled:opacity-40"
+                  >
+                    ×
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="flex items-center gap-2">
+            <label htmlFor="new-player-name" className="sr-only">
+              Name der neuen Spielerin oder des neuen Spielers
+            </label>
+            <input
+              id="new-player-name"
+              type="text"
+              placeholder="Name"
+              value={newPlayerName}
+              onChange={(e) => setNewPlayerName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addPlayer();
+                }
+              }}
+              className="min-h-[44px] flex-1 rounded-[var(--radius-sm)] border border-line bg-surface px-3 text-ink outline-none focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-green-deep"
+            />
+            <button
+              type="button"
+              onClick={addPlayer}
+              disabled={newPlayerName.trim().length === 0}
+              className="min-h-[44px] rounded-[var(--radius-sm)] border border-line px-4 font-black text-ink disabled:opacity-40"
+            >
+              Hinzufügen
+            </button>
+          </div>
+
+          {playersValidationError && (
+            <p className="text-xs font-bold text-ink-soft">{playersValidationError}</p>
+          )}
+
+          {updatePlayers.isError && (
+            <div role="alert" className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-line bg-surface-2 p-3 text-sm text-ink">
+              <p>Spielerliste konnte nicht gespeichert werden: {updatePlayers.error.message}.</p>
+              <button
+                type="button"
+                onClick={savePlayers}
+                className="min-h-[44px] self-start rounded-[var(--radius-sm)] border border-line px-4 font-black text-terra"
+              >
+                Nochmal versuchen
+              </button>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={!playersDirty || Boolean(playersValidationError) || updatePlayers.isPending}
+              onClick={savePlayers}
+              className="min-h-[44px] flex-1 rounded-[var(--radius-md)] border border-line bg-surface px-4 font-black text-ink disabled:opacity-40"
+            >
+              {updatePlayers.isPending ? "Wird gespeichert …" : "Speichern"}
+            </button>
+            {playersDirty && (
+              <button
+                type="button"
+                onClick={discardPlayersEdit}
+                disabled={updatePlayers.isPending}
+                className="min-h-[44px] rounded-[var(--radius-md)] border border-line px-4 font-black text-ink disabled:opacity-40"
+              >
+                Verwerfen
+              </button>
+            )}
+          </div>
+        </section>
+      )}
 
       <Link
         href={`/vorlagen/uebernehmen?sheet=${sheet.id}`}

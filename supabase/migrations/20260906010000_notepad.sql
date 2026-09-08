@@ -290,6 +290,19 @@ grant execute on function
   public.delete_notepad_template(uuid)
 to authenticated;
 
+-- Supabase erteilt neuen Funktionen per Default-Privileges direkt EXECUTE an anon;
+-- `revoke ... from public` entfernt eine direkte Rollen-Erteilung NICHT. Daher
+-- explizit fuer anon entziehen: Gast-Identitaeten melden sich anonym an und sind
+-- damit `authenticated` — `anon` braucht auf diesen Funktionen nie Rechte.
+revoke execute on function
+  public.create_notepad_sheet(uuid,uuid,jsonb,jsonb,text),
+  public.save_notepad_entries(uuid,jsonb,int),
+  public.set_notepad_sheet_status(uuid,text),
+  public.transfer_notepad_writer(uuid,uuid),
+  public.save_notepad_template(uuid,text,text,uuid,jsonb,uuid),
+  public.delete_notepad_template(uuid)
+from anon;
+
 -- ============================================================
 -- Verifikation (Ergebnisse prüfen, nicht nur Ausführung)
 -- ============================================================

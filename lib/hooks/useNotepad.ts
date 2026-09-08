@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
@@ -128,6 +129,14 @@ export function useNotepadActions(sheetId: string, searchId?: string | null) {
   const qc = useQueryClient();
   const configured = isSupabaseConfigured();
 
+  // Die Revision, die der letzte ERFOLGREICHE eigene Save dieses Geräts
+  // erzeugt hat. Wird nur von diesem Hook geschrieben (nie von einem fremden
+  // Gerät berührt) und dient dazu, einen bereits abgeschlossenen eigenen Save
+  // aus der Warteschlange (scope) von einem echten Fremd-Schreiben zu
+  // unterscheiden, siehe effectiveExpectedRevision unten. Lebt so lange wie
+  // dieser Hook (pro sheetId neu, da die Seite bei Sheet-Wechsel remountet).
+  const lastOwnRevisionRef = useRef<number | null>(null);
+
   const save = useMutation<number, Error, { entries: Record<string, unknown>; expectedRevision: number }>({
     // Serialisiert Saves pro Blatt: TanStack Query führt Mutationen mit
     // gleicher scope.id nacheinander aus, nie parallel. Ohne das würde ein
@@ -144,16 +153,31 @@ export function useNotepadActions(sheetId: string, searchId?: string | null) {
     // Stand widerspruchslos. Mit der vom Aufrufer übergebenen (alten)
     // baseRevision lehnt die RPC den Save stattdessen korrekt als Konflikt ab.
     mutationFn: async ({ entries, expectedRevision }) => {
+      // Zwei schnell hintereinander abgeschickte eigene Saves (Debounce feuert
+      // zweimal, bevor der erste zurück ist) capturen beide dieselbe
+      // (veraltete) baseRevision, weil React sie noch nicht aktualisiert hat —
+      // der scope oben serialisiert sie aber trotzdem korrekt hintereinander.
+      // lastOwnRevisionRef.current wird erst NACH Abschluss des vorherigen
+      // eigenen Saves gesetzt (s.u.), also sieht der zweite, hier zur
+      // Ausführungszeit (nicht zur Dispatch-Zeit) gelesene Wert bereits den
+      // frischen Stand — ein Fremd-Schreiben ändert diesen Ref nie, die
+      // Konflikt-Erkennung bleibt also unangetastet.
+      const effectiveExpectedRevision = lastOwnRevisionRef.current ?? expectedRevision;
       if (!configured) {
         // Demo-Modus hat keinen Server und damit keine echte Konflikt-Prüfung;
         // die Revision zählt einfach lokal hoch, expectedRevision bleibt ungenutzt.
+        // lastOwnRevisionRef wird trotzdem gepflegt, damit dieser Zweig
+        // denselben Codepfad/Mental-Model wie der konfigurierte Zweig teilt.
         const current = qc.getQueryData<NotepadSheet | null>(["notepad-sheet", sheetId]);
         const revision = current?.revision ?? 0;
-        patchSheet(qc, sheetId, (s) => ({ ...s, entries, revision: revision + 1 }));
-        return revision + 1;
+        const next = revision + 1;
+        patchSheet(qc, sheetId, (s) => ({ ...s, entries, revision: next }));
+        lastOwnRevisionRef.current = next;
+        return next;
       }
-      const next = await saveEntries(supabase, { sheetId, entries, expectedRevision });
+      const next = await saveEntries(supabase, { sheetId, entries, expectedRevision: effectiveExpectedRevision });
       patchSheet(qc, sheetId, (s) => ({ ...s, entries, revision: next }));
+      lastOwnRevisionRef.current = next;
       return next;
     },
     // Kein Refetch nach jedem Tastendruck: die Revision wandert optimistisch mit,

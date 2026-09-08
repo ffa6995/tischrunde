@@ -162,7 +162,21 @@ export function useNotepadActions(sheetId: string, searchId?: string | null) {
       // Ausführungszeit (nicht zur Dispatch-Zeit) gelesene Wert bereits den
       // frischen Stand — ein Fremd-Schreiben ändert diesen Ref nie, die
       // Konflikt-Erkennung bleibt also unangetastet.
-      const effectiveExpectedRevision = lastOwnRevisionRef.current ?? expectedRevision;
+      //
+      // Max statt "Ref bevorzugen": Nach einem explizit aufgelösten Konflikt
+      // (SheetPageView.takeNewerVersion setzt baseRevision auf sheet.revision
+      // vom Server) kann expectedRevision frischer sein als der hier noch
+      // veraltete Ref, den kein fremd ausgelöster Konflikt zurücksetzt. Beide
+      // Werte sind aber unabhängig voneinander niemals höher als der wahre
+      // Server-Stand (der Ref kommt selbst aus einer Server-Antwort,
+      // expectedRevision aus baseRevision, das nur per erfolgreichem eigenen
+      // Save oder per explizitem takeNewerVersion vorrückt) — das Maximum ist
+      // also immer der jeweils aktuellere von zwei korrekten-oder-veralteten
+      // Werten, nie eine Überschätzung, die der Server fälschlich akzeptieren würde.
+      const effectiveExpectedRevision = Math.max(
+        lastOwnRevisionRef.current ?? expectedRevision,
+        expectedRevision,
+      );
       if (!configured) {
         // Demo-Modus hat keinen Server und damit keine echte Konflikt-Prüfung;
         // die Revision zählt einfach lokal hoch, expectedRevision bleibt ungenutzt.

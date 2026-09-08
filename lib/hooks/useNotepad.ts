@@ -174,8 +174,9 @@ export function useNotepadActions(sheetId: string, searchId?: string | null) {
       }
       await updateSheetPlayers(supabase, sheetId, players);
     },
-    onSuccess: () => {
+    onSuccess: (_result, players) => {
       if (!configured) return;
+      patchSheet(qc, sheetId, (s) => ({ ...s, players }));
       qc.invalidateQueries({ queryKey: ["notepad-sheet", sheetId] });
       if (searchId) qc.invalidateQueries({ queryKey: ["notepad-sheets", searchId] });
     },

@@ -8,6 +8,7 @@ import {
   saveTemplate,
   setSheetStatus,
   transferWriter,
+  updateSheetPlayers,
 } from "./notepad";
 
 function rpcClient(result: { data?: unknown; error?: unknown } = {}) {
@@ -95,6 +96,19 @@ describe("notepad mutation RPC contracts", () => {
       name: "save_notepad_entries",
       args: { p_sheet_id: "sheet-1", p_entries: { table: { rounds: [] } }, p_expected_revision: 3 },
     });
+  });
+
+  it("updates sheet players without smuggling in an extra identity field", async () => {
+    const { client, calls } = rpcClient();
+
+    await updateSheetPlayers(client, "sheet-1", [{ id: "p1", label: "Ann", participant_id: null }]);
+
+    expect(calls).toEqual([
+      {
+        name: "update_notepad_sheet_players",
+        args: { p_sheet_id: "sheet-1", p_players: [{ id: "p1", label: "Ann", participant_id: null }] },
+      },
+    ]);
   });
 
   it("routes the remaining notepad writes through named RPCs with the exact args each RPC expects", async () => {

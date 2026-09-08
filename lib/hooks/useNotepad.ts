@@ -128,21 +128,31 @@ export function useNotepadActions(sheetId: string, searchId?: string | null) {
   const qc = useQueryClient();
   const configured = isSupabaseConfigured();
 
-  const save = useMutation<number, Error, Record<string, unknown>>({
+  const save = useMutation<number, Error, { entries: Record<string, unknown>; expectedRevision: number }>({
     // Serialisiert Saves pro Blatt: TanStack Query führt Mutationen mit
     // gleicher scope.id nacheinander aus, nie parallel. Ohne das würde ein
     // zweiter debounced Save starten, während der erste noch unterwegs ist,
     // beide läsen dieselbe (alte) Revision, und der zweite würde vom Server
     // fälschlich als Konflikt abgelehnt, obwohl niemand sonst geschrieben hat.
     scope: { id: `notepad-save-${sheetId}` },
-    mutationFn: async (entries) => {
-      const current = qc.getQueryData<NotepadSheet | null>(["notepad-sheet", sheetId]);
-      const revision = current?.revision ?? 0;
+    // Die erwartete Revision kommt vom Aufrufer (SheetPageView: baseRevision),
+    // nicht aus dem Query-Cache. Der Cache-Wert kann zwischen Tastendruck
+    // (Timer wird gestellt) und Timer-Ablauf (Save wird tatsächlich
+    // abgeschickt) bereits von einem FREMDEN Save via Realtime vorgerückt
+    // sein — würde man dann die Cache-Revision lesen, würde sie fälschlich
+    // zur erwarteten Revision und der stale Entwurf überschriebe den fremden
+    // Stand widerspruchslos. Mit der vom Aufrufer übergebenen (alten)
+    // baseRevision lehnt die RPC den Save stattdessen korrekt als Konflikt ab.
+    mutationFn: async ({ entries, expectedRevision }) => {
       if (!configured) {
+        // Demo-Modus hat keinen Server und damit keine echte Konflikt-Prüfung;
+        // die Revision zählt einfach lokal hoch, expectedRevision bleibt ungenutzt.
+        const current = qc.getQueryData<NotepadSheet | null>(["notepad-sheet", sheetId]);
+        const revision = current?.revision ?? 0;
         patchSheet(qc, sheetId, (s) => ({ ...s, entries, revision: revision + 1 }));
         return revision + 1;
       }
-      const next = await saveEntries(supabase, { sheetId, entries, expectedRevision: revision });
+      const next = await saveEntries(supabase, { sheetId, entries, expectedRevision });
       patchSheet(qc, sheetId, (s) => ({ ...s, entries, revision: next }));
       return next;
     },

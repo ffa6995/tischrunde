@@ -58,7 +58,16 @@ export function SheetPageView({ sheetId }: { sheetId: string }) {
   // erst NACH Erfolg — bei einem Fehlschlag bleibt die Basis stehen, damit ein
   // späterer Retry mit demselben Entwurf keinen falschen Konflikt auslöst.
   async function commitSave(value: Record<string, unknown>): Promise<void> {
-    const revision = await save.mutateAsync(value);
+    // baseRevision ist zu diesem Zeitpunkt immer gesetzt: commitSave wird nur
+    // aus den Schreiber-Zweigen (handleChange/retrySave/flushPending) heraus
+    // aufgerufen, die alle erst nach dem "if (!sheet) return;"-Guard und damit
+    // nach der einmaligen Initialisierung von baseRevision oben laufen. Die
+    // Laufzeit-Prüfung hier ist nur, um das für TypeScript (number | null)
+    // explizit zu machen, ohne den bestehenden Kontrollfluss umzubauen.
+    if (baseRevision === null) {
+      throw new Error("commitSave aufgerufen, bevor baseRevision initialisiert wurde");
+    }
+    const revision = await save.mutateAsync({ entries: value, expectedRevision: baseRevision });
     setBaseRevision(revision);
   }
 

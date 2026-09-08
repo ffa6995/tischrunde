@@ -14,6 +14,7 @@ import {
   saveTemplate,
   setSheetStatus,
   transferWriter,
+  updateSheetPlayers,
 } from "@/lib/db/notepad";
 import type { CreateSheetInput, SaveTemplateInput } from "@/lib/db/notepad";
 import type { NotepadSheet, NotepadSheetStatus, NotepadTemplate } from "@/lib/types";
@@ -165,6 +166,21 @@ export function useNotepadActions(sheetId: string, searchId?: string | null) {
     },
   });
 
+  const updatePlayers = useMutation<void, Error, NotepadSheet["players"]>({
+    mutationFn: async (players) => {
+      if (!configured) {
+        patchSheet(qc, sheetId, (s) => ({ ...s, players }));
+        return;
+      }
+      await updateSheetPlayers(supabase, sheetId, players);
+    },
+    onSuccess: () => {
+      if (!configured) return;
+      qc.invalidateQueries({ queryKey: ["notepad-sheet", sheetId] });
+      if (searchId) qc.invalidateQueries({ queryKey: ["notepad-sheets", searchId] });
+    },
+  });
+
   const handOver = useMutation<void, Error, string>({
     mutationFn: async (toUserId) => {
       if (!configured) {
@@ -186,6 +202,7 @@ export function useNotepadActions(sheetId: string, searchId?: string | null) {
     reopen: () => setStatus.mutate("active"),
     setStatus,
     handOver,
+    updatePlayers,
   };
 }
 

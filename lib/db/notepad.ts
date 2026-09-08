@@ -101,6 +101,18 @@ export async function setSheetStatus(
   if (error) throw error;
 }
 
+export async function updateSheetPlayers(
+  supabase: SupabaseClient,
+  sheetId: string,
+  players: NotepadSheet["players"],
+): Promise<void> {
+  const { error } = await supabase.rpc("update_notepad_sheet_players", {
+    p_sheet_id: sheetId,
+    p_players: players,
+  });
+  if (error) throw error;
+}
+
 export async function transferWriter(
   supabase: SupabaseClient,
   sheetId: string,

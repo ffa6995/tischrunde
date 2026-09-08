@@ -47,6 +47,9 @@ export function useRound(searchId: string) {
       isSupabaseConfigured()
         ? getRound(supabase, searchId)
         : Promise.resolve(demoRound(searchId)),
+    // Ein leerer Wert bedeutet "kein Bezug zu einer Runde" (z.B. ein
+    // freistehendes Notizblock-Blatt) — dann keine sinnlose Anfrage schicken.
+    enabled: Boolean(searchId),
   });
 }
 

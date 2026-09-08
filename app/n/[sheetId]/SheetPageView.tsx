@@ -5,8 +5,12 @@ import Link from "next/link";
 import { SheetView } from "@/components/notepad/SheetView";
 import { useNotepadActions, useNotepadSheet } from "@/lib/hooks/useNotepad";
 import { useRealtimeSheet } from "@/lib/hooks/useRealtimeSheet";
+import { useRound } from "@/lib/hooks/useRounds";
 import { useSession } from "@/lib/hooks/useSession";
 import type { SheetPlayer } from "@/lib/notepad/schema";
+
+/** Gleiche Ausschluss-Menge wie die `transfer_notepad_writer`-RPC. */
+const INELIGIBLE_PARTICIPANT_STATUSES = new Set(["left", "removed", "no_show"]);
 
 /** Speichert gebündelt, damit nicht jeder Tastendruck eine RPC auslöst. */
 const SAVE_DEBOUNCE_MS = 600;
@@ -19,8 +23,16 @@ function newPlayerId(): string {
 export function SheetPageView({ sheetId }: { sheetId: string }) {
   const { data: sheet, isLoading } = useNotepadSheet(sheetId);
   const session = useSession();
-  const { save, finish, reopen, setStatus, updatePlayers } = useNotepadActions(sheetId, sheet?.search_id ?? null);
+  const { save, finish, reopen, setStatus, updatePlayers, handOver } = useNotepadActions(
+    sheetId,
+    sheet?.search_id ?? null,
+  );
   useRealtimeSheet(sheetId);
+  // Hooks müssen unabhängig davon, ob `sheet` schon geladen ist, in jedem
+  // Render aufgerufen werden. `useRound` selbst behandelt einen leeren
+  // searchId sicher (liefert einfach keine Runde), daher genügt der
+  // Leerstring-Fallback statt einer bedingten Hook-Aufruf.
+  const round = useRound(sheet?.search_id ?? "");
 
   // Nur der Schreiber hält einen lokalen Entwurf (für sofortiges Feedback
   // während des Tippens, vor dem debounced Save). Mitleser rendern immer
@@ -135,6 +147,12 @@ export function SheetPageView({ sheetId }: { sheetId: string }) {
   const [playersDraft, setPlayersDraft] = useState<SheetPlayer[] | null>(null);
   const [newPlayerName, setNewPlayerName] = useState("");
 
+  // Schreiber-Übergabe: komplett getrennter lokaler State. `handoverTarget`
+  // ist null ohne laufenden Vorgang, sonst die user_id, die gerade bestätigt
+  // wird (zweiter Tap) oder für die eine Übergabe zuletzt versucht wurde
+  // (damit "Nochmal versuchen" nach einem Fehler dieselbe Person erneut trifft).
+  const [handoverTarget, setHandoverTarget] = useState<string | null>(null);
+
   if (isLoading) return <p className="p-4 text-ink-soft">Notizblock wird geladen …</p>;
   if (!sheet) {
     return (
@@ -163,6 +181,19 @@ export function SheetPageView({ sheetId }: { sheetId: string }) {
   // `readOnly` oben, die RPC lehnt ein abgeschlossenes Blatt serverseitig
   // ohnehin ab, aber die UI soll die Kontrolle erst gar nicht anbieten.
   const canManagePlayers = isWriter && !readOnly;
+
+  // Schreiber-Übergabe: nur möglich, wenn das Blatt zu einer Runde gehört
+  // (die RPC lehnt ein alleinstehendes Blatt ohne Runde serverseitig ab) und
+  // ansonsten unter denselben Bedingungen wie jede andere Schreiber-Aktion.
+  const canHandOver = isWriter && Boolean(sheet.search_id) && !readOnly;
+  // Ziele kommen bewusst aus den echten Runden-Teilnehmenden (useRound), nicht
+  // aus sheet.players — die Spielerliste des Blatts ist seit dem
+  // Editable-Players-Feature unabhängig von der Runden-Mitgliedschaft, aber
+  // die RPC prüft `participants`, nicht `sheet.players`. Dieselbe
+  // Ausschluss-Menge wie die RPC, plus die aktuelle Schreiberin selbst.
+  const eligibleWriters = (round.data?.participants ?? []).filter(
+    (p) => !INELIGIBLE_PARTICIPANT_STATUSES.has(p.status) && p.user_id !== sheet.owner_id,
+  );
   const players = (playersDraft ?? (sheet.players as SheetPlayer[]));
   const trimmedPlayers = players.map((p) => ({ ...p, label: p.label.trim() }));
   const hasBlankLabel = trimmedPlayers.some((p) => p.label.length === 0);
@@ -240,6 +271,21 @@ export function SheetPageView({ sheetId }: { sheetId: string }) {
   function savePlayers() {
     if (playersValidationError) return;
     updatePlayers.mutate(trimmedPlayers, { onSuccess: () => setPlayersDraft(null) });
+  }
+
+  function askHandover(userId: string) {
+    handOver.reset();
+    setHandoverTarget(userId);
+  }
+
+  function cancelHandover() {
+    handOver.reset();
+    setHandoverTarget(null);
+  }
+
+  function confirmHandover() {
+    if (!handoverTarget) return;
+    handOver.mutate(handoverTarget, { onSuccess: () => setHandoverTarget(null) });
   }
 
   async function handleFinish() {
@@ -411,6 +457,72 @@ export function SheetPageView({ sheetId }: { sheetId: string }) {
               </button>
             )}
           </div>
+        </section>
+      )}
+
+      {canHandOver && (
+        <section className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-line bg-surface p-3">
+          <h2 className="font-black text-ink">Schreiber wechseln</h2>
+
+          {eligibleWriters.length === 0 ? (
+            <p className="text-sm text-ink-soft">Niemand sonst ist gerade in der Runde.</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {eligibleWriters.map((p) => {
+                const name = p.profile?.display_name?.trim() || "Unbekannt";
+                const isConfirming = handoverTarget === p.user_id;
+                return (
+                  <li key={p.user_id} className="flex flex-col gap-2">
+                    {isConfirming ? (
+                      <div className="flex flex-col gap-2 rounded-[var(--radius-sm)] border border-line p-2">
+                        <p className="text-sm text-ink">Wirklich die Schreiber-Rolle an {name} übergeben?</p>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={confirmHandover}
+                            disabled={handOver.isPending}
+                            className="min-h-[44px] flex-1 rounded-[var(--radius-sm)] border border-line bg-surface px-4 font-black text-ink disabled:opacity-40"
+                          >
+                            {handOver.isPending ? "Wird übergeben …" : "Ja, übergeben"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelHandover}
+                            disabled={handOver.isPending}
+                            className="min-h-[44px] rounded-[var(--radius-sm)] border border-line px-4 font-black text-ink disabled:opacity-40"
+                          >
+                            Abbrechen
+                          </button>
+                        </div>
+                        {handOver.isError && (
+                          <div role="alert" className="flex flex-col gap-2 rounded-[var(--radius-sm)] border border-line bg-surface-2 p-3 text-sm text-ink">
+                            <p>Übergabe fehlgeschlagen: {handOver.error.message}.</p>
+                            <button
+                              type="button"
+                              onClick={confirmHandover}
+                              className="min-h-[44px] self-start rounded-[var(--radius-sm)] border border-line px-4 font-black text-terra"
+                            >
+                              Nochmal versuchen
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        aria-label={`Schreiber-Rolle an ${name} weitergeben`}
+                        disabled={handoverTarget !== null}
+                        onClick={() => askHandover(p.user_id)}
+                        className="min-h-[44px] rounded-[var(--radius-sm)] border border-line px-4 text-left font-black text-ink disabled:opacity-40"
+                      >
+                        {name} übernimmt
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </section>
       )}
 
